@@ -35,27 +35,38 @@ pub fn hash_password(password: &str) -> Result<String, argon2::password_hash::Er
     Ok(hash.to_string())
 }
 
-pub fn verify_password(user: Option<User>, password: &str) -> (bool, Option<User>) {
+pub fn verify_password(user: Option<User>, password: &str) -> Option<User> {
     let argon2 = get_argon2_instance();
-    match user {
-        Some(u) => {
-            let hash_str = u.password();
-            let parsed_hash = PasswordHash::new(hash_str);
-            return argon2
-                .verify_password(password.as_bytes(), &parsed_hash.unwrap())
-                .map(|_| (true, Some(u)))
-                .unwrap_or((false, None));
+
+    // A valid dummy hash generated with the same Argon2 params.
+    // This is used only when the user is not found.
+    const DUMMY_HASH: &str =
+        "$argon2id$v=19$m=65536,t=3,p=1$2aYZPLsX/K0wjEZ1Hy6leg$ZxY80K0Lq3nS/PKsOciRJodOH9u8BRVdiAhjKFDUbCE";
+
+    // Get the user's hash, or the dummy hash if the user is None.
+    // This avoids branching before the verification step.
+    let hash_to_verify = user.as_ref().map_or(DUMMY_HASH, |u| u.password());
+
+    // Parse the hash. If parsing fails (e.g., corrupted hash in DB), it's an automatic failure.
+    let parsed_hash = match PasswordHash::new(hash_to_verify) {
+        Ok(h) => h,
+        Err(_) => {
+            // If parsing fails, we still run a dummy verification to keep timing consistent.
+            let dummy_parsed = PasswordHash::new(DUMMY_HASH).unwrap(); // This unwrap is safe.
+            let _ = argon2.verify_password(b"dummy password", &dummy_parsed); // Intentionally ignore result
+            return None; // Invalid hash means failure.
         }
-        None => {
-            // Simulate password verification to mitigate timing attacks
-            let dummy_hash: &str =
-                "$argon2id$v=19$m=65536,t=3,p=1$2aYZPLsX/K0wjEZ1Hy6leg$ZxY80K0Lq3nS/PKsOciRJodOH9u8BRVdiAhjKFDUbCE";
-            let dummy_parsed =
-                PasswordHash::new(dummy_hash);
-            return argon2
-                .verify_password(password.as_bytes(), &dummy_parsed.unwrap())
-                .map(|_| (false, None))
-                .unwrap_or((false, None));
-        }
+    };
+
+    // Perform the verification.
+    let is_valid = argon2
+        .verify_password(password.as_bytes(), &parsed_hash)
+        .is_ok();
+
+    // Only return the user if the password is valid AND the user actually existed.
+    if is_valid && user.is_some() {
+        user
+    } else {
+        None
     }
 }

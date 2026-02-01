@@ -209,18 +209,12 @@ pub fn signin(conn: &Connection) -> Result<Option<User>> {
         .prompt()
         .unwrap_or_default();
 
-    let user: Option<User> = user::select_by_email_or_username(conn, &identifier)?;
+    let user = user::select_by_email_or_username(conn, &identifier)?;
 
-    let generic_msg = "We couldn't verify your account with the provided credentials.";
-
-    let (ok, user) = security::verify_password(user, &password_input);
-
-    if ok {
-        if let Some(u) = user {
-            return Ok(Some(u));
-        }
+    if let Some(found_user) = security::verify_password(user, &password_input) {
+        return Ok(Some(found_user));
     }
 
-    println!("{}", generic_msg);
+    println!("{}", "We couldn't verify your account with the provided credentials.");
     Ok(None)
 }
