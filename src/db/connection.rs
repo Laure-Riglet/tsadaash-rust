@@ -4,7 +4,7 @@ pub fn connect() -> Result<Connection> {
     let conn: Connection = Connection::open("data/app.db")?;
 
     // Create a tiny table to verify everything works
-    conn.execute(
+    conn.execute_batch(
         r#"
             CREATE TABLE IF NOT EXISTS people (
                 id INTEGER PRIMARY KEY, 
@@ -24,7 +24,6 @@ pub fn connect() -> Result<Connection> {
                 UPDATE people SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id;
             END;
             "#,
-        [],
     )?;
 
     return Ok(conn);
