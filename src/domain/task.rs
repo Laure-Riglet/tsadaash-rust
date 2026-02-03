@@ -7,10 +7,7 @@ pub struct Task {
     pub is_recurring: bool,
     pub recurrence_interval: Option<String>,
     pub recurrence_unit: Option<String>,
-    pub from_time: Option<String>,
-    pub to_time: Option<String>,
-    pub start_date: Option<String>,
-    pub end_date: Option<String>,
+    pub date: Option<String>, // If unique date is needed for non-recurring tasks
     pub created_at: String,
     pub updated_at: String,
 }
@@ -23,10 +20,7 @@ impl Task {
         is_recurring: bool,
         recurrence_interval: Option<String>,
         recurrence_unit: Option<String>,
-        from_time: Option<String>,
-        to_time: Option<String>,
-        start_date: Option<String>,
-        end_date: Option<String>,
+        date: Option<String>,
         created_at: String,
         updated_at: String,
     ) -> Self {
@@ -37,10 +31,7 @@ impl Task {
             is_recurring,
             recurrence_interval,
             recurrence_unit,
-            from_time,
-            to_time,
-            start_date,
-            end_date,
+            date,
             created_at,
             updated_at,
         }
@@ -65,17 +56,8 @@ impl Task {
     pub fn recurrence_unit(&self) -> Option<&String> {
         self.recurrence_unit.as_ref()
     }
-    pub fn from_time(&self) -> Option<&String> {
-        self.from_time.as_ref()
-    }
-    pub fn to_time(&self) -> Option<&String> {
-        self.to_time.as_ref()
-    }
-    pub fn start_date(&self) -> Option<&String> {
-        self.start_date.as_ref()
-    }
-    pub fn end_date(&self) -> Option<&String> {
-        self.end_date.as_ref()
+    pub fn date(&self) -> Option<&String> {
+        self.date.as_ref()
     }
     pub fn created_at(&self) -> &str {
         &self.created_at

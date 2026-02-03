@@ -1,9 +1,11 @@
+use std::io::stdin;
 use crate::cli::helpers::clear_screen;
+use crate::db::repository::task::{insert, select_by_user_id};
 use chrono::{NaiveDate, Weekday};
 use inquire::{Confirm, DateSelect, Select, Text};
-use rusqlite::Result;
+use rusqlite::{Connection, Result};
 
-pub fn menu(user_id: u32) -> Result<(), rusqlite::Error> {
+pub fn menu(conn: &Connection, user_id: u32) -> Result<(), rusqlite::Error> {
     let options = vec![
         "Create Task",
         "View Tasks",
@@ -21,11 +23,10 @@ pub fn menu(user_id: u32) -> Result<(), rusqlite::Error> {
 
         match choice {
             "Create Task" => {
-                create_task(user_id)?;
+                create_task(&conn, user_id)?;
             }
             "View Tasks" => {
-                println!("Viewing tasks...");
-                // Implement task viewing logic here
+                view_tasks(&conn, user_id)?;
             }
             "Update Task" => {
                 println!("Updating a task...");
@@ -46,7 +47,7 @@ pub fn menu(user_id: u32) -> Result<(), rusqlite::Error> {
     Ok(())
 }
 
-fn create_task(user_id: u32) -> Result<()> {
+fn create_task(conn: &Connection, user_id: u32) -> Result<()> {
     // Form
     let title = Text::new("Enter task title:")
         .with_placeholder("Type your answer here")
@@ -58,57 +59,75 @@ fn create_task(user_id: u32) -> Result<()> {
         .prompt()
         .unwrap_or(false);
 
-    match is_recurring {
+    let (recurrence_interval, recurrence_unit, date) = match is_recurring {
         false => {
-            let recurrence_interval: Option<String> = None;
-            let recurrence_unit: Option<String> = None;
+            let naive_date = DateSelect::new("Select start date of task completion:")
+                .with_starting_date(NaiveDate::from_ymd_opt(2026, 2, 3).unwrap())
+                .with_min_date(NaiveDate::from_ymd_opt(2026, 2, 3).unwrap())
+                .with_max_date(NaiveDate::from_ymd_opt(2026, 5, 31).unwrap())
+                .with_week_start(Weekday::Mon)
+                .prompt()
+                .expect("Failed to get date");
+            let date = Some(naive_date.format("%Y-%m-%d").to_string());
+            (None, None, date)
         }
         true => {
             // Recurring task details
-            let recurrence_interval = Text::new("Enter recurrence interval (e.g., '2'):")
+            let interval = Text::new("Enter recurrence interval (e.g., '2'):")
                 .with_placeholder("Type your answer here")
                 .prompt()
                 .unwrap_or_default();
 
-            let recurrence_unit = Select::new(
+            let unit = Select::new(
                 "Select recurrence unit:",
                 vec!["days", "weeks", "months", "years"],
             )
             .prompt()
             .unwrap_or_else(|_| "days");
+            
+            (Some(interval), Some(unit.to_string()), None)
         }
-    }
+    };
 
-    let from_time = Text::new("Enter start time of completion (HH:MM) or leave blank:")
-        .with_placeholder("Type your answer here")
-        .prompt()
-        .unwrap_or_default();
-
-    let to_time = Text::new("Enter end time of completion (HH:MM) or leave blank:")
-        .with_placeholder("Type your answer here")
-        .prompt()
-        .unwrap_or_default();
-
-    let start_date = DateSelect::new("Select start date of task completion:")
-        .with_starting_date(NaiveDate::from_ymd(2026, 2, 1))
-        .with_min_date(NaiveDate::from_ymd(2026, 2, 2))
-        .with_max_date(NaiveDate::from_ymd(2026, 5, 31))
-        .with_week_start(Weekday::Mon)
-        .prompt()
-        .unwrap_or_default();
-
-    let end_date = DateSelect::new("Select end date of task completion:")
-        .with_starting_date(NaiveDate::from_ymd(2026, 2, 1))
-        .with_min_date(NaiveDate::from_ymd(2026, 2, 2))
-        .with_max_date(NaiveDate::from_ymd(2026, 5, 31))
-        .with_week_start(Weekday::Mon)
-        .prompt()
-        .unwrap_or_default();
+    // Insert into DB
+    insert(
+        conn,
+        user_id,
+        &title,
+        is_recurring,
+        recurrence_interval.as_deref(),
+        recurrence_unit.as_deref(),
+        date.as_deref(),
+    )?;
 
     println!("Task '{}' created successfully!", title);
     println!("Press Enter to continue...");
     let mut input = String::new();
-    std::io::stdin().read_line(&mut input).unwrap();    
+    stdin().read_line(&mut input).unwrap();
+
+    Ok(())
+}
+
+fn view_tasks(conn: &Connection, user_id: u32) -> Result<()> {
+    let tasks = select_by_user_id(conn, user_id as i32)?;
+
+    clear_screen();
+    println!("=== Your Tasks ===");
+    let mut index: u8 = 1;
+    for task in tasks {
+        println!(
+            "{}. [{}] {} (ID: {})",
+            index,
+            if task.is_recurring() { "R" } else { "U" },
+            task.title(),
+            task.id()
+        );
+        index += 1;
+    }
+
+    println!("\nPress Enter to continue...");
+    let mut input = String::new();
+    stdin().read_line(&mut input).unwrap();
 
     Ok(())
 }

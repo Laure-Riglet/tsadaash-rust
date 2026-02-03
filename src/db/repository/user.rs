@@ -7,7 +7,7 @@ pub fn select_by_email_or_username(
 ) -> rusqlite::Result<Option<User>> {
     let mut stmt = conn.prepare(
         "SELECT id, username, email, password, tz_continent, tz_city, created_at, updated_at 
-         FROM people 
+         FROM users 
          WHERE email = ?1 OR username = ?1",
     )?;
     let mut rows = stmt.query([identifier])?;
@@ -38,7 +38,7 @@ pub fn insert(
     tz_city: &str,
 ) -> rusqlite::Result<User> {
     conn.execute(
-        "INSERT INTO people (username, email, password, tz_continent, tz_city) VALUES (?1, ?2, ?3, ?4, ?5)",
+        "INSERT INTO users (username, email, password, tz_continent, tz_city) VALUES (?1, ?2, ?3, ?4, ?5)",
         (username, email, password, tz_continent, tz_city),
     )?;
 
@@ -46,7 +46,7 @@ pub fn insert(
     
     let mut stmt = conn.prepare(
         "SELECT id, username, email, password, tz_continent, tz_city, created_at, updated_at 
-         FROM people 
+         FROM users 
          WHERE id = ?1",
     )?;
     let user = stmt.query_row([id], |row| {

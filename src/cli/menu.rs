@@ -45,7 +45,7 @@ pub fn init_menu(conn: &Connection) -> Result<()> {
             },
             "Tasks" => {
                 if let Some(user) = &current_user {
-                    menu(user.id() as u32).unwrap_or(());
+                    menu(&conn, user.id() as u32).unwrap_or(());
                 } else {
                     println!("No user signed in.");
                 }
