@@ -1,4 +1,5 @@
 use chrono::{Month, NaiveTime, Weekday};
+use crate::domain::Timezone;
 
 #[derive(Debug, Clone)]
 pub struct User {
@@ -7,10 +8,8 @@ pub struct User {
     pub password: String,
 
     // ── TIMEZONE SETTINGS ───────────────────────────────────
-    /// Timezone continent (e.g., "America", "Europe")
-    pub tz_continent: String,
-    /// Timezone city (e.g., "New_York", "London")
-    pub tz_city: String,
+    /// User's timezone (e.g., "America/New_York", "Europe/London")
+    pub timezone: Timezone,
 
     // ── CALENDAR SETTINGS ────────────────────────────────────
     
@@ -33,19 +32,21 @@ pub struct User {
 }
 
 impl User {
+    /// Creates a new user with the given timezone
+    /// 
+    /// # Errors
+    /// Returns `TimezoneError` if the timezone is invalid
     pub fn new(
         username: String,
         email: String,
         password: String,
-        tz_continent: String,
-        tz_city: String,
+        timezone: Timezone,
     ) -> Self {
         Self {
             username,
             email,
             password,
-            tz_continent,
-            tz_city,
+            timezone,
             week_start: Weekday::Mon,
             year_start: Month::January,
             day_start: NaiveTime::from_hms_opt(0, 0, 0).unwrap(),
@@ -57,8 +58,7 @@ impl User {
         username: String,
         email: String,
         password: String,
-        tz_continent: String,
-        tz_city: String,
+        timezone: Timezone,
         week_start: Weekday,
         year_start: Month,
         day_start: NaiveTime,
@@ -67,11 +67,50 @@ impl User {
             username,
             email,
             password,
-            tz_continent,
-            tz_city,
+            timezone,
             week_start,
             year_start,
             day_start,
         }
+    }
+    
+    // ── TIMEZONE SETTER ─────────────────────────────────────
+    
+    /// Updates the user's timezone
+    pub fn set_timezone(&mut self, timezone: Timezone) {
+        self.timezone = timezone;
+    }
+    
+    // ── CALENDAR SETTINGS SETTERS ──────────────────────────
+    
+    /// Sets the first day of the week
+    pub fn set_week_start(&mut self, weekday: Weekday) {
+        self.week_start = weekday;
+    }
+    
+    /// Sets the first month of the year (for fiscal year support)
+    pub fn set_year_start(&mut self, month: Month) {
+        self.year_start = month;
+    }
+    
+    /// Sets the time of day when a new day begins
+    /// 
+    /// # Example
+    /// ```
+    /// # use tsadaash::domain::{User, Timezone, Continents};
+    /// # use chrono::NaiveTime;
+    /// let timezone = Timezone::new(Continents::America, "New_York".to_string()).unwrap();
+    /// let mut user = User::new(
+    ///     "user".to_string(),
+    ///     "user@example.com".to_string(),
+    ///     "password".to_string(),
+    ///     timezone,
+    /// );
+    /// 
+    /// // Night shift worker: day starts at 6 PM
+    /// user.set_day_start(NaiveTime::from_hms_opt(18, 0, 0).unwrap());
+    /// ```
+    pub fn set_day_start(&mut self, time: NaiveTime) {
+        self.day_start = time;
     }
 }
