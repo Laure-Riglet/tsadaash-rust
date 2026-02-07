@@ -685,6 +685,7 @@ mod tests {
             special_pattern: Some(SpecialPattern::Unique(UniqueDate {
                 date: Utc::now(),
             })),
+            reference_date: None,
         };
         
         assert!(periodicity.validate().is_err());
@@ -700,6 +701,7 @@ mod tests {
             week_start: Weekday::Mon,
             year_start: Month::January,
             special_pattern: None,
+            reference_date: None,
         };
         
         assert!(periodicity.validate().is_err());

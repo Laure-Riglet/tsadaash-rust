@@ -11,8 +11,7 @@
 mod periodicity_tests {
     use crate::domain::{
         Periodicity, PeriodicityBuilder, DayConstraint, MonthConstraint,
-        WeekConstraint, NthWeekdayOfMonth, MonthWeekPosition, RepetitionUnit,
-        ValidationError
+        NthWeekdayOfMonth, RepetitionUnit, ValidationError
     };
     use chrono::{Utc, Weekday, Month, TimeZone};
 
@@ -243,6 +242,7 @@ mod periodicity_tests {
             week_start: Weekday::Mon,
             year_start: Month::January,
             special_pattern: None,
+            reference_date: None,
         };
         
         let result = p.validate();
@@ -269,6 +269,7 @@ mod periodicity_tests {
             week_start: Weekday::Mon,
             year_start: Month::January,
             special_pattern: None,
+            reference_date: None,
         };
         
         let result = p.validate();
@@ -306,6 +307,7 @@ mod periodicity_tests {
             week_start: Weekday::Mon,
             year_start: Month::January,
             special_pattern: None,
+            reference_date: None,
         };
         
         let result = p.validate();
@@ -329,6 +331,7 @@ mod periodicity_tests {
             week_start: Weekday::Mon,
             year_start: Month::January,
             special_pattern: None,
+            reference_date: None,
         };
         
         let result = p.validate();
@@ -352,6 +355,7 @@ mod periodicity_tests {
             week_start: Weekday::Mon,
             year_start: Month::January,
             special_pattern: None,
+            reference_date: None,
         };
         
         let result = p.validate();
@@ -375,6 +379,7 @@ mod periodicity_tests {
             week_start: Weekday::Mon,
             year_start: Month::January,
             special_pattern: None,
+            reference_date: None,
         };
         
         let result = p.validate();
@@ -412,6 +417,7 @@ mod periodicity_tests {
             timeframe: None,
             week_start: Weekday::Mon,
             year_start: Month::January,
+            reference_date: None,
         };
         
         let result = p.validate();
@@ -631,5 +637,180 @@ mod periodicity_tests {
         // February 2026: 28 days, starts Sunday
         let feb_weeks = Periodicity::weeks_in_month(2026, 2, Weekday::Mon);
         assert_eq!(feb_weeks, 4, "February 2026 should have exactly 4 weeks");
+    }
+
+    // ========================================================================
+    // EVERY N* ROLLING PATTERN TESTS
+    // ========================================================================
+
+    #[test]
+    fn test_every_n_days_with_reference_date() {
+        // EveryNDays(3) with explicit reference date
+        let reference = Utc.with_ymd_and_hms(2026, 1, 1, 0, 0, 0).unwrap();
+        
+        let periodicity = PeriodicityBuilder::new()
+            .daily(1)
+            .every_n_days(3)
+            .with_reference_date(reference)
+            .build()
+            .unwrap();
+        
+        // Day 0 (reference): Jan 1 - should match
+        assert!(periodicity.matches_constraints(&reference), "Jan 1 (day 0) should match");
+        
+        // Day 3: Jan 4 - should match
+        let jan_4 = Utc.with_ymd_and_hms(2026, 1, 4, 0, 0, 0).unwrap();
+        assert!(periodicity.matches_constraints(&jan_4), "Jan 4 (day 3) should match");
+        
+        // Day 2: Jan 3 - should NOT match
+        let jan_3 = Utc.with_ymd_and_hms(2026, 1, 3, 0, 0, 0).unwrap();
+        assert!(!periodicity.matches_constraints(&jan_3), "Jan 3 (day 2) should NOT match");
+        
+        // Day 6: Jan 7 - should match
+        let jan_7 = Utc.with_ymd_and_hms(2026, 1, 7, 0, 0, 0).unwrap();
+        assert!(periodicity.matches_constraints(&jan_7), "Jan 7 (day 6) should match");
+        
+        // Day 5: Jan 6 - should NOT match
+        let jan_6 = Utc.with_ymd_and_hms(2026, 1, 6, 0, 0, 0).unwrap();
+        assert!(!periodicity.matches_constraints(&jan_6), "Jan 6 (day 5) should NOT match");
+    }
+
+    #[test]
+    fn test_every_n_weeks_with_reference_date() {
+        // EveryNWeeks(2) with Monday start, reference Jan 5 (Monday)
+        let reference = Utc.with_ymd_and_hms(2026, 1, 5, 0, 0, 0).unwrap(); // Monday
+        
+        let periodicity = PeriodicityBuilder::new()
+            .weekly(1)
+            .every_n_weeks(2)
+            .week_starts_on(Weekday::Mon)
+            .with_reference_date(reference)
+            .build()
+            .unwrap();
+        
+        // Week 0: Jan 5-11 (Mon-Sun) - should match
+        let jan_5 = Utc.with_ymd_and_hms(2026, 1, 5, 12, 0, 0).unwrap();
+        assert!(periodicity.matches_constraints(&jan_5), "Jan 5 (Mon, week 0) should match");
+        
+        let jan_10 = Utc.with_ymd_and_hms(2026, 1, 10, 12, 0, 0).unwrap();
+        assert!(periodicity.matches_constraints(&jan_10), "Jan 10 (Sat, week 0) should match");
+        
+        // Week 1: Jan 12-18 (Mon-Sun) - should NOT match
+        let jan_12 = Utc.with_ymd_and_hms(2026, 1, 12, 12, 0, 0).unwrap();
+        assert!(!periodicity.matches_constraints(&jan_12), "Jan 12 (Mon, week 1) should NOT match");
+        
+        // Week 2: Jan 19-25 (Mon-Sun) - should match
+        let jan_19 = Utc.with_ymd_and_hms(2026, 1, 19, 12, 0, 0).unwrap();
+        assert!(periodicity.matches_constraints(&jan_19), "Jan 19 (Mon, week 2) should match");
+        
+        let jan_23 = Utc.with_ymd_and_hms(2026, 1, 23, 12, 0, 0).unwrap();
+        assert!(periodicity.matches_constraints(&jan_23), "Jan 23 (Fri, week 2) should match");
+        
+        // Week 3: Jan 26-Feb 1 (Mon-Sun) - should NOT match
+        let jan_26 = Utc.with_ymd_and_hms(2026, 1, 26, 12, 0, 0).unwrap();
+        assert!(!periodicity.matches_constraints(&jan_26), "Jan 26 (Mon, week 3) should NOT match");
+    }
+
+    #[test]
+    fn test_every_n_months_with_reference_date() {
+        // EveryNMonths(2) - every 2 months starting from January
+        let reference = Utc.with_ymd_and_hms(2026, 1, 15, 0, 0, 0).unwrap();
+        
+        let periodicity = PeriodicityBuilder::new()
+            .monthly(1)
+            .every_n_months(2)
+            .with_reference_date(reference)
+            .build()
+            .unwrap();
+        
+        // Month 0: January - should match
+        let jan_20 = Utc.with_ymd_and_hms(2026, 1, 20, 0, 0, 0).unwrap();
+        assert!(periodicity.matches_constraints(&jan_20), "January (month 0) should match");
+        
+        // Month 1: February - should NOT match
+        let feb_15 = Utc.with_ymd_and_hms(2026, 2, 15, 0, 0, 0).unwrap();
+        assert!(!periodicity.matches_constraints(&feb_15), "February (month 1) should NOT match");
+        
+        // Month 2: March - should match
+        let mar_15 = Utc.with_ymd_and_hms(2026, 3, 15, 0, 0, 0).unwrap();
+        assert!(periodicity.matches_constraints(&mar_15), "March (month 2) should match");
+        
+        // Month 3: April - should NOT match
+        let apr_15 = Utc.with_ymd_and_hms(2026, 4, 15, 0, 0, 0).unwrap();
+        assert!(!periodicity.matches_constraints(&apr_15), "April (month 3) should NOT match");
+        
+        // Month 4: May - should match
+        let may_15 = Utc.with_ymd_and_hms(2026, 5, 15, 0, 0, 0).unwrap();
+        assert!(periodicity.matches_constraints(&may_15), "May (month 4) should match");
+    }
+
+    #[test]
+    fn test_every_n_years_with_reference_date() {
+        // EveryNYears(2) - every 2 years starting from 2026
+        let reference = Utc.with_ymd_and_hms(2026, 6, 15, 0, 0, 0).unwrap();
+        
+        let periodicity = PeriodicityBuilder::new()
+            .yearly(1)
+            .every_n_years(2)
+            .with_reference_date(reference)
+            .build()
+            .unwrap();
+        
+        // Year 0: 2026 - should match
+        let y2026 = Utc.with_ymd_and_hms(2026, 8, 20, 0, 0, 0).unwrap();
+        assert!(periodicity.matches_constraints(&y2026), "2026 (year 0) should match");
+        
+        // Year 1: 2027 - should NOT match
+        let y2027 = Utc.with_ymd_and_hms(2027, 6, 15, 0, 0, 0).unwrap();
+        assert!(!periodicity.matches_constraints(&y2027), "2027 (year 1) should NOT match");
+        
+        // Year 2: 2028 - should match
+        let y2028 = Utc.with_ymd_and_hms(2028, 6, 15, 0, 0, 0).unwrap();
+        assert!(periodicity.matches_constraints(&y2028), "2028 (year 2) should match");
+        
+        // Year 4: 2030 - should match
+        let y2030 = Utc.with_ymd_and_hms(2030, 6, 15, 0, 0, 0).unwrap();
+        assert!(periodicity.matches_constraints(&y2030), "2030 (year 4) should match");
+    }
+
+    #[test]
+    fn test_reference_date_fallback_to_timeframe() {
+        // When reference_date is not set, should use timeframe.start
+        let timeframe_start = Utc.with_ymd_and_hms(2026, 1, 10, 0, 0, 0).unwrap();
+        let timeframe_end = Utc.with_ymd_and_hms(2026, 12, 31, 23, 59, 59).unwrap();
+        
+        let periodicity = PeriodicityBuilder::new()
+            .daily(1)
+            .every_n_days(5)
+            .between(timeframe_start, timeframe_end)
+            // Note: NOT setting reference_date explicitly
+            .build()
+            .unwrap();
+        
+        // Day 0: Jan 10 (timeframe start) - should match
+        assert!(periodicity.matches_constraints(&timeframe_start), "Jan 10 (day 0) should match");
+        
+        // Day 5: Jan 15 - should match
+        let jan_15 = Utc.with_ymd_and_hms(2026, 1, 15, 0, 0, 0).unwrap();
+        assert!(periodicity.matches_constraints(&jan_15), "Jan 15 (day 5) should match");
+        
+        // Day 4: Jan 14 - should NOT match
+        let jan_14 = Utc.with_ymd_and_hms(2026, 1, 14, 0, 0, 0).unwrap();
+        assert!(!periodicity.matches_constraints(&jan_14), "Jan 14 (day 4) should NOT match");
+    }
+
+    #[test]
+    fn test_reference_date_fallback_to_current_date() {
+        // When neither reference_date nor timeframe is set, uses current date being checked
+        let periodicity = PeriodicityBuilder::new()
+            .daily(1)
+            .every_n_days(7)
+            // Note: NOT setting reference_date or timeframe
+            .build()
+            .unwrap();
+        
+        // Any date will match because it's 0 days from itself (itself is the fallback reference)
+        let any_date = Utc.with_ymd_and_hms(2026, 5, 20, 0, 0, 0).unwrap();
+        assert!(periodicity.matches_constraints(&any_date), "Any date should match (0 days from itself)");
     }
 }

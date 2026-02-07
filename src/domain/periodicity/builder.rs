@@ -34,6 +34,7 @@ pub struct PeriodicityBuilder {
     week_start: Weekday,
     year_start: Month,
     special_pattern: Option<SpecialPattern>,
+    reference_date: Option<DateTime<Utc>>,
 }
 
 impl Default for PeriodicityBuilder {
@@ -56,6 +57,7 @@ impl PeriodicityBuilder {
             week_start: Weekday::Mon,
             year_start: Month::January,
             special_pattern: None,
+            reference_date: None,
         }
     }
     
@@ -271,6 +273,19 @@ impl PeriodicityBuilder {
         self
     }
     
+    /// Sets the reference date for EveryN* rolling patterns
+    /// This is the anchor point from which intervals are counted.
+    /// 
+    /// # Usage
+    /// Typically set by the Task layer based on:
+    /// 1. First TaskOccurrence date (if any exist)
+    /// 2. Otherwise relies on timeframe.start_inclusive
+    /// 3. Otherwise uses date being checked as fallback
+    pub fn with_reference_date(mut self, date: DateTime<Utc>) -> Self {
+        self.reference_date = Some(date);
+        self
+    }
+    
     // ────────────────────────────────────────────────────────
     // BUILD
     // ────────────────────────────────────────────────────────
@@ -290,6 +305,7 @@ impl PeriodicityBuilder {
             week_start: self.week_start,
             year_start: self.year_start,
             special_pattern: self.special_pattern,
+            reference_date: self.reference_date,
         };
         
         // Validate before returning

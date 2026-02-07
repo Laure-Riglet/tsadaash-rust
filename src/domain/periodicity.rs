@@ -241,6 +241,7 @@ pub struct PeriodicityConstraints {
 ///     week_start: Weekday::Mon,
 ///     year_start: Month::January,
 ///     special_pattern: None,
+///     reference_date: None,
 /// };
 /// # assert_eq!(periodicity.rep_unit, RepetitionUnit::Day);
 /// ```
@@ -284,6 +285,18 @@ pub struct Periodicity {
     /// For non-periodic patterns (Custom or Unique dates)
     /// When set, rep_unit must be RepetitionUnit::None
     pub special_pattern: Option<SpecialPattern>,
+    
+    // ── REFERENCE DATE ───────────────────────────────────────
+    
+    /// Reference date for EveryN* rolling patterns (EveryNDays, EveryNWeeks, etc.)
+    /// This is the anchor point from which to count intervals.
+    /// 
+    /// # Setting the Reference Date
+    /// Should be set by the Task layer based on:
+    /// 1. First TaskOccurrence date (if any exist)
+    /// 2. Otherwise, uses timeframe.start_inclusive if set
+    /// 3. Otherwise, uses first date being checked as fallback
+    pub reference_date: Option<DateTime<Utc>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -301,6 +314,27 @@ impl Periodicity {
     /// This is the main entry point for domain validation
     pub fn validate(&self) -> Result<(), validation::ValidationError> {
         validation::validate_periodicity(self)
+    }
+    
+    /// Gets the effective reference date for EveryN* constraint calculations
+    /// 
+    /// # Rules (in priority order):
+    /// 1. If reference_date is set (from TaskOccurrence), use it
+    /// 2. If timeframe.start_inclusive is set, use it
+    /// 3. Use the provided current_date as fallback
+    fn get_effective_reference_date(&self, current_date: &DateTime<Utc>) -> DateTime<Utc> {
+        // Rule 1: Explicit reference date (set from TaskOccurrence layer)
+        if let Some(ref_date) = self.reference_date {
+            return ref_date;
+        }
+        
+        // Rule 2: Timeframe start (if set)
+        if let Some((start, _)) = self.timeframe {
+            return start;
+        }
+        
+        // Rule 3: Fallback to current date being checked
+        *current_date
     }
     
     /// Checks if a specific date matches this periodicity's constraints
@@ -355,10 +389,10 @@ impl Periodicity {
     fn matches_day_constraint(&self, date: &DateTime<Utc>, constraint: &DayConstraint) -> bool {
         match constraint {
             DayConstraint::EveryDay => true,
-            DayConstraint::EveryNDays(_n) => {
-                // TODO: Requires reference start date to calculate
-                // For now, return true (implement with task tracking)
-                true
+            DayConstraint::EveryNDays(n) => {
+                let ref_date = self.get_effective_reference_date(date);
+                let days_diff = (*date - ref_date).num_days().abs();
+                (days_diff % (*n as i64)) == 0
             }
             DayConstraint::SpecificDaysWeek(weekdays) => {
                 weekdays.contains(&date.weekday())
@@ -397,9 +431,18 @@ impl Periodicity {
     fn matches_week_constraint(&self, date: &DateTime<Utc>, constraint: &WeekConstraint) -> bool {
         match constraint {
             WeekConstraint::EveryWeek => true,
-            WeekConstraint::EveryNWeeks(_n) => {
-                // TODO: Requires reference start date
-                true
+            WeekConstraint::EveryNWeeks(n) => {
+                let ref_date = self.get_effective_reference_date(date);
+                
+                // Get the start of the week for both dates (respecting week_start)
+                let ref_week_start = Self::get_week_start(&ref_date, self.week_start);
+                let date_week_start = Self::get_week_start(date, self.week_start);
+                
+                // Calculate weeks difference
+                let days_diff = (date_week_start - ref_week_start).num_days().abs();
+                let weeks_diff = days_diff / 7;
+                
+                (weeks_diff % (*n as i64)) == 0
             }
             WeekConstraint::SpecificWeeksOfMonthFromFirst(weeks) => {
                 let week_of_month = Self::week_of_month_from_first(date, self.week_start);
@@ -423,9 +466,14 @@ impl Periodicity {
     fn matches_month_constraint(&self, date: &DateTime<Utc>, constraint: &MonthConstraint) -> bool {
         match constraint {
             MonthConstraint::EveryMonth => true,
-            MonthConstraint::EveryNMonths(_n) => {
-                // TODO: Requires reference start date
-                true
+            MonthConstraint::EveryNMonths(n) => {
+                let ref_date = self.get_effective_reference_date(date);
+                
+                // Calculate months difference
+                let years_diff = date.year() - ref_date.year();
+                let months_diff = (years_diff * 12) + (date.month() as i32 - ref_date.month() as i32);
+                
+                (months_diff.abs() % (*n as i32)) == 0
             }
             MonthConstraint::SpecificMonths(months) => {
                 let month = Month::try_from(date.month() as u8).unwrap();
@@ -437,9 +485,10 @@ impl Periodicity {
     fn matches_year_constraint(&self, date: &DateTime<Utc>, constraint: &YearConstraint) -> bool {
         match constraint {
             YearConstraint::EveryYear => true,
-            YearConstraint::EveryNYears(_n) => {
-                // TODO: Requires reference start date
-                true
+            YearConstraint::EveryNYears(n) => {
+                let ref_date = self.get_effective_reference_date(date);
+                let years_diff = (date.year() - ref_date.year()).abs();
+                (years_diff % (*n as i32)) == 0
             }
             YearConstraint::SpecificYears(years) => {
                 years.contains(&date.year())
@@ -448,8 +497,27 @@ impl Periodicity {
     }
     
     // ── HELPER FUNCTIONS ─────────────────────────────────────
-    
-    fn last_day_of_month(date: NaiveDate) -> u32 {
+        /// Get the start of the week for a given date, based on week_start setting
+    /// Returns a DateTime at 00:00:00 on the week_start day
+    fn get_week_start(date: &DateTime<Utc>, week_start: Weekday) -> DateTime<Utc> {
+        let current_weekday = date.weekday();
+        
+        // Calculate days to go back to reach week_start
+        let days_back = (current_weekday.num_days_from_monday() + 7 
+            - week_start.num_days_from_monday()) % 7;
+        
+        let week_start_date = if days_back == 0 {
+            date.date_naive()
+        } else {
+            date.date_naive() - chrono::Duration::days(days_back as i64)
+        };
+        
+        DateTime::from_naive_utc_and_offset(
+            week_start_date.and_hms_opt(0, 0, 0).unwrap(),
+            Utc
+        )
+    }
+        fn last_day_of_month(date: NaiveDate) -> u32 {
         NaiveDate::from_ymd_opt(
             date.year(),
             date.month() + 1,
