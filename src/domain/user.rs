@@ -97,9 +97,9 @@ impl User {
     /// 
     /// # Example
     /// ```
-    /// # use tsadaash::domain::{User, Timezone, Continents};
+    /// # use tsadaash::domain::{User, Timezone};
     /// # use chrono::NaiveTime;
-    /// let timezone = Timezone::new(Continents::America, "New_York".to_string()).unwrap();
+    /// let timezone = Timezone::new("America/New_York".to_string()).unwrap();
     /// let mut user = User::new(
     ///     "user".to_string(),
     ///     "user@example.com".to_string(),
