@@ -1,5 +1,5 @@
 use chrono::{Month, NaiveTime, Weekday};
-use crate::domain::Timezone;
+use crate::domain::{Timezone, Location};
 
 #[derive(Debug, Clone)]
 pub struct User {
@@ -7,9 +7,12 @@ pub struct User {
     pub email: String,
     pub password: String,
 
-    // ── TIMEZONE SETTINGS ───────────────────────────────────
+    // ── TIMEZONE & LOCATION ──────────────────────────────────
     /// User's timezone (e.g., "America/New_York", "Europe/London")
     pub timezone: Timezone,
+    
+    /// User's physical location (optional)
+    pub location: Option<Location>,
 
     // ── CALENDAR SETTINGS ────────────────────────────────────
     
@@ -33,9 +36,6 @@ pub struct User {
 
 impl User {
     /// Creates a new user with the given timezone
-    /// 
-    /// # Errors
-    /// Returns `TimezoneError` if the timezone is invalid
     pub fn new(
         username: String,
         email: String,
@@ -47,18 +47,20 @@ impl User {
             email,
             password,
             timezone,
+            location: None,
             week_start: Weekday::Mon,
             year_start: Month::January,
             day_start: NaiveTime::from_hms_opt(0, 0, 0).unwrap(),
         }
     }
     
-    /// Create a user with custom calendar settings
-    pub fn with_calendar_settings(
+    /// Create a user with custom calendar settings and optional location
+    pub fn with_all_settings(
         username: String,
         email: String,
         password: String,
         timezone: Timezone,
+        location: Option<Location>,
         week_start: Weekday,
         year_start: Month,
         day_start: NaiveTime,
@@ -68,17 +70,23 @@ impl User {
             email,
             password,
             timezone,
+            location,
             week_start,
             year_start,
             day_start,
         }
     }
     
-    // ── TIMEZONE SETTER ─────────────────────────────────────
+    // ── TIMEZONE & LOCATION SETTERS ─────────────────────────
     
     /// Updates the user's timezone
     pub fn set_timezone(&mut self, timezone: Timezone) {
         self.timezone = timezone;
+    }
+    
+    /// Sets or updates the user's location
+    pub fn set_location(&mut self, location: Option<Location>) {
+        self.location = location;
     }
     
     // ── CALENDAR SETTINGS SETTERS ──────────────────────────
