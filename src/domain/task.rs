@@ -1,5 +1,5 @@
 use crate::domain::Periodicity;
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Utc, Weekday};
 
 // ========================================================================
 // VALIDATION ERRORS
@@ -234,14 +234,18 @@ impl Task {
 
     /// Check if this task should occur on a specific date
     /// (based on periodicity and status)
-    pub fn should_occur_on(&self, date: &DateTime<Utc>) -> bool {
+    /// 
+    /// # Parameters
+    /// - `date`: The date to check
+    /// - `week_start`: First day of the week (from User calendar settings)
+    pub fn should_occur_on(&self, date: &DateTime<Utc>, week_start: Weekday) -> bool {
         // Only active tasks generate occurrences
         if self.status != TaskStatus::Active {
             return false;
         }
 
         // Check if date matches periodicity constraints
-        if !self.periodicity.matches_constraints(date) {
+        if !self.periodicity.matches_constraints(date, week_start) {
             return false;
         }
 
@@ -340,15 +344,15 @@ mod tests {
         let date = Utc::now();
         
         // Active task should occur
-        assert!(task.should_occur_on(&date));
+        assert!(task.should_occur_on(&date, Weekday::Mon));
         
         // Paused task should not occur
         task.pause();
-        assert!(!task.should_occur_on(&date));
+        assert!(!task.should_occur_on(&date, Weekday::Mon));
         
         // Archived task should not occur
         task.set_status(TaskStatus::Archived);
-        assert!(!task.should_occur_on(&date));
+        assert!(!task.should_occur_on(&date, Weekday::Mon));
     }
 
     #[test]

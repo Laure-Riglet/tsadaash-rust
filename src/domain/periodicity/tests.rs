@@ -13,7 +13,7 @@ mod periodicity_tests {
         Periodicity, PeriodicityBuilder, DayConstraint, MonthConstraint,
         NthWeekdayOfMonth, RepetitionUnit, ValidationError
     };
-    use chrono::{NaiveTime, Utc, Weekday, Month, TimeZone};
+    use chrono::{Utc, Weekday, Month, TimeZone};
 
     // ========================================================================
     // BASIC VALID CONFIGURATIONS
@@ -90,11 +90,11 @@ mod periodicity_tests {
         let mar_13 = Utc.with_ymd_and_hms(2026, 3, 13, 10, 0, 0).unwrap();
         let jan_15 = Utc.with_ymd_and_hms(2026, 1, 15, 10, 0, 0).unwrap();
         
-        assert!(p.matches_constraints(&jan_13), "Should match Jan 13th");
-        assert!(p.matches_constraints(&jan_24), "Should match Jan 24th");
-        assert!(p.matches_constraints(&feb_13), "Should match Feb 13th");
-        assert!(!p.matches_constraints(&mar_13), "Should NOT match Mar 13th (wrong month)");
-        assert!(!p.matches_constraints(&jan_15), "Should NOT match Jan 15th (wrong day)");
+        assert!(p.matches_constraints(&jan_13, Weekday::Mon), "Should match Jan 13th");
+        assert!(p.matches_constraints(&jan_24, Weekday::Mon), "Should match Jan 24th");
+        assert!(p.matches_constraints(&feb_13, Weekday::Mon), "Should match Feb 13th");
+        assert!(!p.matches_constraints(&mar_13, Weekday::Mon), "Should NOT match Mar 13th (wrong month)");
+        assert!(!p.matches_constraints(&jan_15, Weekday::Mon), "Should NOT match Jan 15th (wrong day)");
     }
 
     #[test]
@@ -111,11 +111,11 @@ mod periodicity_tests {
         
         // Monday in 2026
         let monday = Utc.with_ymd_and_hms(2026, 2, 2, 10, 0, 0).unwrap();
-        assert!(p.matches_constraints(&monday));
+        assert!(p.matches_constraints(&monday, Weekday::Mon));
         
         // Tuesday
         let tuesday = Utc.with_ymd_and_hms(2026, 2, 3, 10, 0, 0).unwrap();
-        assert!(!p.matches_constraints(&tuesday));
+        assert!(!p.matches_constraints(&tuesday, Weekday::Mon));
     }
 
     #[test]
@@ -131,11 +131,11 @@ mod periodicity_tests {
         
         // Feb 2, 2026 is first Monday of February
         let first_monday_feb = Utc.with_ymd_and_hms(2026, 2, 2, 10, 0, 0).unwrap();
-        assert!(p.matches_constraints(&first_monday_feb));
+        assert!(p.matches_constraints(&first_monday_feb, Weekday::Mon));
         
         // Feb 9, 2026 is second Monday
         let second_monday_feb = Utc.with_ymd_and_hms(2026, 2, 9, 10, 0, 0).unwrap();
-        assert!(!p.matches_constraints(&second_monday_feb));
+        assert!(!p.matches_constraints(&second_monday_feb, Weekday::Mon));
     }
 
     #[test]
@@ -151,15 +151,15 @@ mod periodicity_tests {
         
         // Jan 31 (last day of January)
         let jan_31 = Utc.with_ymd_and_hms(2026, 1, 31, 10, 0, 0).unwrap();
-        assert!(p.matches_constraints(&jan_31));
+        assert!(p.matches_constraints(&jan_31, Weekday::Mon));
         
         // Jan 30 (not last day)
         let jan_30 = Utc.with_ymd_and_hms(2026, 1, 30, 10, 0, 0).unwrap();
-        assert!(!p.matches_constraints(&jan_30));
+        assert!(!p.matches_constraints(&jan_30, Weekday::Mon));
         
         // Feb 28 (last day of February in 2026 - not a leap year)
         let feb_28 = Utc.with_ymd_and_hms(2026, 2, 28, 10, 0, 0).unwrap();
-        assert!(p.matches_constraints(&feb_28));
+        assert!(p.matches_constraints(&feb_28, Weekday::Mon));
     }
 
     #[test]
@@ -178,11 +178,11 @@ mod periodicity_tests {
         
         // Monday (should match)
         let monday = Utc.with_ymd_and_hms(2026, 2, 2, 10, 0, 0).unwrap();
-        assert!(p.matches_constraints(&monday));
+        assert!(p.matches_constraints(&monday, Weekday::Mon));
         
         // Saturday (should NOT match)
         let saturday = Utc.with_ymd_and_hms(2026, 2, 7, 10, 0, 0).unwrap();
-        assert!(!p.matches_constraints(&saturday));
+        assert!(!p.matches_constraints(&saturday, Weekday::Mon));
     }
 
     #[test]
@@ -232,16 +232,12 @@ mod periodicity_tests {
         // We can't test this easily through the builder since it enforces this
         // But we can verify that validation catches it
         use crate::domain::periodicity::{Periodicity, PeriodicityConstraints, RepetitionUnit};
-        use chrono::Month;
         
         let p = Periodicity {
             rep_unit: RepetitionUnit::Day,
             rep_per_unit: None, // Missing!
             constraints: PeriodicityConstraints::default(),
             timeframe: None,
-            week_start: Weekday::Mon,
-            year_start: Month::January,
-            day_start: NaiveTime::from_hms_opt(0, 0, 0).unwrap(),
             special_pattern: None,
             reference_date: None,
         };
@@ -260,16 +256,12 @@ mod periodicity_tests {
     fn test_invalid_zero_rep_count() {
         // rep_per_unit cannot be zero
         use crate::domain::periodicity::{Periodicity, PeriodicityConstraints, RepetitionUnit};
-        use chrono::Month;
         
         let p = Periodicity {
             rep_unit: RepetitionUnit::Day,
             rep_per_unit: Some(0), // Zero is invalid!
             constraints: PeriodicityConstraints::default(),
             timeframe: None,
-            week_start: Weekday::Mon,
-            year_start: Month::January,
-            day_start: NaiveTime::from_hms_opt(0, 0, 0).unwrap(),
             special_pattern: None,
             reference_date: None,
         };
@@ -293,7 +285,6 @@ mod periodicity_tests {
     fn test_invalid_duplicate_weekdays() {
         // Duplicate weekdays should be rejected
         use crate::domain::periodicity::{Periodicity, PeriodicityConstraints, DayConstraint, RepetitionUnit};
-        use chrono::Month;
         
         let p = Periodicity {
             rep_unit: RepetitionUnit::Day,
@@ -306,9 +297,6 @@ mod periodicity_tests {
                 ..Default::default()
             },
             timeframe: None,
-            week_start: Weekday::Mon,
-            year_start: Month::January,
-            day_start: NaiveTime::from_hms_opt(0, 0, 0).unwrap(),
             special_pattern: None,
             reference_date: None,
         };
@@ -321,7 +309,6 @@ mod periodicity_tests {
     fn test_invalid_month_day_out_of_range() {
         // Day value > 30 is invalid (0-indexed, so max is 30 = 31st day)
         use crate::domain::periodicity::{Periodicity, PeriodicityConstraints, DayConstraint, RepetitionUnit};
-        use chrono::Month;
         
         let p = Periodicity {
             rep_unit: RepetitionUnit::Day,
@@ -331,9 +318,6 @@ mod periodicity_tests {
                 ..Default::default()
             },
             timeframe: None,
-            week_start: Weekday::Mon,
-            year_start: Month::January,
-            day_start: NaiveTime::from_hms_opt(0, 0, 0).unwrap(),
             special_pattern: None,
             reference_date: None,
         };
@@ -346,7 +330,6 @@ mod periodicity_tests {
     fn test_invalid_every_n_days_zero() {
         // EveryNDays(0) is invalid
         use crate::domain::periodicity::{Periodicity, PeriodicityConstraints, DayConstraint, RepetitionUnit};
-        use chrono::Month;
         
         let p = Periodicity {
             rep_unit: RepetitionUnit::Day,
@@ -356,9 +339,6 @@ mod periodicity_tests {
                 ..Default::default()
             },
             timeframe: None,
-            week_start: Weekday::Mon,
-            year_start: Month::January,
-            day_start: NaiveTime::from_hms_opt(0, 0, 0).unwrap(),
             special_pattern: None,
             reference_date: None,
         };
@@ -371,7 +351,6 @@ mod periodicity_tests {
     fn test_invalid_every_n_days_too_large() {
         // EveryNDays > 366 is invalid
         use crate::domain::periodicity::{Periodicity, PeriodicityConstraints, DayConstraint, RepetitionUnit};
-        use chrono::Month;
         
         let p = Periodicity {
             rep_unit: RepetitionUnit::Day,
@@ -381,9 +360,6 @@ mod periodicity_tests {
                 ..Default::default()
             },
             timeframe: None,
-            week_start: Weekday::Mon,
-            year_start: Month::January,
-            day_start: NaiveTime::from_hms_opt(0, 0, 0).unwrap(),
             special_pattern: None,
             reference_date: None,
         };
@@ -409,7 +385,6 @@ mod periodicity_tests {
     fn test_invalid_special_pattern_with_constraints() {
         // Special patterns cannot have regular constraints
         use crate::domain::periodicity::{Periodicity, PeriodicityConstraints, DayConstraint, RepetitionUnit, SpecialPattern, UniqueDate};
-        use chrono::Month;
         
         let date = Utc::now();
         let p = Periodicity {
@@ -421,9 +396,6 @@ mod periodicity_tests {
                 ..Default::default()
             },
             timeframe: None,
-            week_start: Weekday::Mon,
-            year_start: Month::January,
-            day_start: NaiveTime::from_hms_opt(0, 0, 0).unwrap(),
             reference_date: None,
         };
         
@@ -460,12 +432,11 @@ mod periodicity_tests {
         let result = PeriodicityBuilder::new()
             .daily(1)
             .on_weekdays(vec![Weekday::Sat, Weekday::Sun])
-            .week_starts_on(Weekday::Sun)
             .build();
         
         assert!(result.is_ok());
-        let p = result.unwrap();
-        assert_eq!(p.week_start, Weekday::Sun);
+        let _p = result.unwrap();
+        // Builder chaining works correctly
     }
 
     // ========================================================================
@@ -486,7 +457,7 @@ mod periodicity_tests {
         
         // 2024 is a leap year
         let feb_29_2024 = Utc.with_ymd_and_hms(2024, 2, 29, 10, 0, 0).unwrap();
-        assert!(p.matches_constraints(&feb_29_2024));
+        assert!(p.matches_constraints(&feb_29_2024, Weekday::Mon));
         
         // 2026 is NOT a leap year - Feb 29 doesn't exist
         // (we can't test constraint matching on a non-existent date)
@@ -506,14 +477,14 @@ mod periodicity_tests {
         // Test in January (31 days): 29, 30, 31
         let jan_29 = Utc.with_ymd_and_hms(2026, 1, 29, 10, 0, 0).unwrap();
         let jan_31 = Utc.with_ymd_and_hms(2026, 1, 31, 10, 0, 0).unwrap();
-        assert!(p.matches_constraints(&jan_29));
-        assert!(p.matches_constraints(&jan_31));
+        assert!(p.matches_constraints(&jan_29, Weekday::Mon));
+        assert!(p.matches_constraints(&jan_31, Weekday::Mon));
         
         // Test in February (28 days in 2026): 26, 27, 28
         let feb_26 = Utc.with_ymd_and_hms(2026, 2, 26, 10, 0, 0).unwrap();
         let feb_28 = Utc.with_ymd_and_hms(2026, 2, 28, 10, 0, 0).unwrap();
-        assert!(p.matches_constraints(&feb_26));
-        assert!(p.matches_constraints(&feb_28));
+        assert!(p.matches_constraints(&feb_26, Weekday::Mon));
+        assert!(p.matches_constraints(&feb_28, Weekday::Mon));
     }
 
     #[test]
@@ -602,31 +573,30 @@ mod periodicity_tests {
         let periodicity = PeriodicityBuilder::new()
             .daily(1)
             .on_weeks_of_month(vec![1, 2]) // 1-indexed: week 1 and week 2
-            .week_starts_on(Weekday::Mon)
             .build()
             .unwrap();
         
         // February 2026 tests
         let feb_1 = Utc.with_ymd_and_hms(2026, 2, 1, 12, 0, 0).unwrap();
-        assert!(!periodicity.matches_constraints(&feb_1), "Feb 1 (Sun, pre-week-0) should not match");
+        assert!(!periodicity.matches_constraints(&feb_1, Weekday::Mon), "Feb 1 (Sun, pre-week-0) should not match");
         
         let feb_2 = Utc.with_ymd_and_hms(2026, 2, 2, 12, 0, 0).unwrap();
-        assert!(periodicity.matches_constraints(&feb_2), "Feb 2 (Mon, week 0) should match");
+        assert!(periodicity.matches_constraints(&feb_2, Weekday::Mon), "Feb 2 (Mon, week 0) should match");
         
         let feb_8 = Utc.with_ymd_and_hms(2026, 2, 8, 12, 0, 0).unwrap();
-        assert!(periodicity.matches_constraints(&feb_8), "Feb 8 (Sun, week 0) should match");
+        assert!(periodicity.matches_constraints(&feb_8, Weekday::Mon), "Feb 8 (Sun, week 0) should match");
         
         let feb_9 = Utc.with_ymd_and_hms(2026, 2, 9, 12, 0, 0).unwrap();
-        assert!(periodicity.matches_constraints(&feb_9), "Feb 9 (Mon, week 1) should match");
+        assert!(periodicity.matches_constraints(&feb_9, Weekday::Mon), "Feb 9 (Mon, week 1) should match");
         
         let feb_15 = Utc.with_ymd_and_hms(2026, 2, 15, 12, 0, 0).unwrap();
-        assert!(periodicity.matches_constraints(&feb_15), "Feb 15 (Sun, week 1) should match");
+        assert!(periodicity.matches_constraints(&feb_15, Weekday::Mon), "Feb 15 (Sun, week 1) should match");
         
         let feb_16 = Utc.with_ymd_and_hms(2026, 2, 16, 12, 0, 0).unwrap();
-        assert!(!periodicity.matches_constraints(&feb_16), "Feb 16 (Mon, week 2) should NOT match");
+        assert!(!periodicity.matches_constraints(&feb_16, Weekday::Mon), "Feb 16 (Mon, week 2) should NOT match");
         
         let feb_23 = Utc.with_ymd_and_hms(2026, 2, 23, 12, 0, 0).unwrap();
-        assert!(!periodicity.matches_constraints(&feb_23), "Feb 23 (Mon, week 3) should NOT match");
+        assert!(!periodicity.matches_constraints(&feb_23, Weekday::Mon), "Feb 23 (Mon, week 3) should NOT match");
     }
 
     #[test]
@@ -663,23 +633,23 @@ mod periodicity_tests {
             .unwrap();
         
         // Day 0 (reference): Jan 1 - should match
-        assert!(periodicity.matches_constraints(&reference), "Jan 1 (day 0) should match");
+        assert!(periodicity.matches_constraints(&reference, Weekday::Mon), "Jan 1 (day 0) should match");
         
         // Day 3: Jan 4 - should match
         let jan_4 = Utc.with_ymd_and_hms(2026, 1, 4, 0, 0, 0).unwrap();
-        assert!(periodicity.matches_constraints(&jan_4), "Jan 4 (day 3) should match");
+        assert!(periodicity.matches_constraints(&jan_4, Weekday::Mon), "Jan 4 (day 3) should match");
         
         // Day 2: Jan 3 - should NOT match
         let jan_3 = Utc.with_ymd_and_hms(2026, 1, 3, 0, 0, 0).unwrap();
-        assert!(!periodicity.matches_constraints(&jan_3), "Jan 3 (day 2) should NOT match");
+        assert!(!periodicity.matches_constraints(&jan_3, Weekday::Mon), "Jan 3 (day 2) should NOT match");
         
         // Day 6: Jan 7 - should match
         let jan_7 = Utc.with_ymd_and_hms(2026, 1, 7, 0, 0, 0).unwrap();
-        assert!(periodicity.matches_constraints(&jan_7), "Jan 7 (day 6) should match");
+        assert!(periodicity.matches_constraints(&jan_7, Weekday::Mon), "Jan 7 (day 6) should match");
         
         // Day 5: Jan 6 - should NOT match
         let jan_6 = Utc.with_ymd_and_hms(2026, 1, 6, 0, 0, 0).unwrap();
-        assert!(!periodicity.matches_constraints(&jan_6), "Jan 6 (day 5) should NOT match");
+        assert!(!periodicity.matches_constraints(&jan_6, Weekday::Mon), "Jan 6 (day 5) should NOT match");
     }
 
     #[test]
@@ -690,32 +660,31 @@ mod periodicity_tests {
         let periodicity = PeriodicityBuilder::new()
             .weekly(1)
             .every_n_weeks(2)
-            .week_starts_on(Weekday::Mon)
             .with_reference_date(reference)
             .build()
             .unwrap();
         
         // Week 0: Jan 5-11 (Mon-Sun) - should match
         let jan_5 = Utc.with_ymd_and_hms(2026, 1, 5, 12, 0, 0).unwrap();
-        assert!(periodicity.matches_constraints(&jan_5), "Jan 5 (Mon, week 0) should match");
+        assert!(periodicity.matches_constraints(&jan_5, Weekday::Mon), "Jan 5 (Mon, week 0) should match");
         
         let jan_10 = Utc.with_ymd_and_hms(2026, 1, 10, 12, 0, 0).unwrap();
-        assert!(periodicity.matches_constraints(&jan_10), "Jan 10 (Sat, week 0) should match");
+        assert!(periodicity.matches_constraints(&jan_10, Weekday::Mon), "Jan 10 (Sat, week 0) should match");
         
         // Week 1: Jan 12-18 (Mon-Sun) - should NOT match
         let jan_12 = Utc.with_ymd_and_hms(2026, 1, 12, 12, 0, 0).unwrap();
-        assert!(!periodicity.matches_constraints(&jan_12), "Jan 12 (Mon, week 1) should NOT match");
+        assert!(!periodicity.matches_constraints(&jan_12, Weekday::Mon), "Jan 12 (Mon, week 1) should NOT match");
         
         // Week 2: Jan 19-25 (Mon-Sun) - should match
         let jan_19 = Utc.with_ymd_and_hms(2026, 1, 19, 12, 0, 0).unwrap();
-        assert!(periodicity.matches_constraints(&jan_19), "Jan 19 (Mon, week 2) should match");
+        assert!(periodicity.matches_constraints(&jan_19, Weekday::Mon), "Jan 19 (Mon, week 2) should match");
         
         let jan_23 = Utc.with_ymd_and_hms(2026, 1, 23, 12, 0, 0).unwrap();
-        assert!(periodicity.matches_constraints(&jan_23), "Jan 23 (Fri, week 2) should match");
+        assert!(periodicity.matches_constraints(&jan_23, Weekday::Mon), "Jan 23 (Fri, week 2) should match");
         
         // Week 3: Jan 26-Feb 1 (Mon-Sun) - should NOT match
         let jan_26 = Utc.with_ymd_and_hms(2026, 1, 26, 12, 0, 0).unwrap();
-        assert!(!periodicity.matches_constraints(&jan_26), "Jan 26 (Mon, week 3) should NOT match");
+        assert!(!periodicity.matches_constraints(&jan_26, Weekday::Mon), "Jan 26 (Mon, week 3) should NOT match");
     }
 
     #[test]
@@ -732,23 +701,23 @@ mod periodicity_tests {
         
         // Month 0: January - should match
         let jan_20 = Utc.with_ymd_and_hms(2026, 1, 20, 0, 0, 0).unwrap();
-        assert!(periodicity.matches_constraints(&jan_20), "January (month 0) should match");
+        assert!(periodicity.matches_constraints(&jan_20, Weekday::Mon), "January (month 0) should match");
         
         // Month 1: February - should NOT match
         let feb_15 = Utc.with_ymd_and_hms(2026, 2, 15, 0, 0, 0).unwrap();
-        assert!(!periodicity.matches_constraints(&feb_15), "February (month 1) should NOT match");
+        assert!(!periodicity.matches_constraints(&feb_15, Weekday::Mon), "February (month 1) should NOT match");
         
         // Month 2: March - should match
         let mar_15 = Utc.with_ymd_and_hms(2026, 3, 15, 0, 0, 0).unwrap();
-        assert!(periodicity.matches_constraints(&mar_15), "March (month 2) should match");
+        assert!(periodicity.matches_constraints(&mar_15, Weekday::Mon), "March (month 2) should match");
         
         // Month 3: April - should NOT match
         let apr_15 = Utc.with_ymd_and_hms(2026, 4, 15, 0, 0, 0).unwrap();
-        assert!(!periodicity.matches_constraints(&apr_15), "April (month 3) should NOT match");
+        assert!(!periodicity.matches_constraints(&apr_15, Weekday::Mon), "April (month 3) should NOT match");
         
         // Month 4: May - should match
         let may_15 = Utc.with_ymd_and_hms(2026, 5, 15, 0, 0, 0).unwrap();
-        assert!(periodicity.matches_constraints(&may_15), "May (month 4) should match");
+        assert!(periodicity.matches_constraints(&may_15, Weekday::Mon), "May (month 4) should match");
     }
 
     #[test]
@@ -765,19 +734,19 @@ mod periodicity_tests {
         
         // Year 0: 2026 - should match
         let y2026 = Utc.with_ymd_and_hms(2026, 8, 20, 0, 0, 0).unwrap();
-        assert!(periodicity.matches_constraints(&y2026), "2026 (year 0) should match");
+        assert!(periodicity.matches_constraints(&y2026, Weekday::Mon), "2026 (year 0) should match");
         
         // Year 1: 2027 - should NOT match
         let y2027 = Utc.with_ymd_and_hms(2027, 6, 15, 0, 0, 0).unwrap();
-        assert!(!periodicity.matches_constraints(&y2027), "2027 (year 1) should NOT match");
+        assert!(!periodicity.matches_constraints(&y2027, Weekday::Mon), "2027 (year 1) should NOT match");
         
         // Year 2: 2028 - should match
         let y2028 = Utc.with_ymd_and_hms(2028, 6, 15, 0, 0, 0).unwrap();
-        assert!(periodicity.matches_constraints(&y2028), "2028 (year 2) should match");
+        assert!(periodicity.matches_constraints(&y2028, Weekday::Mon), "2028 (year 2) should match");
         
         // Year 4: 2030 - should match
         let y2030 = Utc.with_ymd_and_hms(2030, 6, 15, 0, 0, 0).unwrap();
-        assert!(periodicity.matches_constraints(&y2030), "2030 (year 4) should match");
+        assert!(periodicity.matches_constraints(&y2030, Weekday::Mon), "2030 (year 4) should match");
     }
 
     #[test]
@@ -795,15 +764,15 @@ mod periodicity_tests {
             .unwrap();
         
         // Day 0: Jan 10 (timeframe start) - should match
-        assert!(periodicity.matches_constraints(&timeframe_start), "Jan 10 (day 0) should match");
+        assert!(periodicity.matches_constraints(&timeframe_start, Weekday::Mon), "Jan 10 (day 0) should match");
         
         // Day 5: Jan 15 - should match
         let jan_15 = Utc.with_ymd_and_hms(2026, 1, 15, 0, 0, 0).unwrap();
-        assert!(periodicity.matches_constraints(&jan_15), "Jan 15 (day 5) should match");
+        assert!(periodicity.matches_constraints(&jan_15, Weekday::Mon), "Jan 15 (day 5) should match");
         
         // Day 4: Jan 14 - should NOT match
         let jan_14 = Utc.with_ymd_and_hms(2026, 1, 14, 0, 0, 0).unwrap();
-        assert!(!periodicity.matches_constraints(&jan_14), "Jan 14 (day 4) should NOT match");
+        assert!(!periodicity.matches_constraints(&jan_14, Weekday::Mon), "Jan 14 (day 4) should NOT match");
     }
 
     #[test]
@@ -818,6 +787,6 @@ mod periodicity_tests {
         
         // Any date will match because it's 0 days from itself (itself is the fallback reference)
         let any_date = Utc.with_ymd_and_hms(2026, 5, 20, 0, 0, 0).unwrap();
-        assert!(periodicity.matches_constraints(&any_date), "Any date should match (0 days from itself)");
+        assert!(periodicity.matches_constraints(&any_date, Weekday::Mon), "Any date should match (0 days from itself)");
     }
 }

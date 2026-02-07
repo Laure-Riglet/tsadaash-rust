@@ -1,4 +1,4 @@
-use chrono::{DateTime, Datelike, Month, NaiveDate, NaiveTime, Utc, Weekday};
+use chrono::{DateTime, Datelike, Month, NaiveDate, Utc, Weekday};
 
 pub mod validation;
 pub mod builder;
@@ -227,7 +227,7 @@ pub struct PeriodicityConstraints {
 /// # Examples
 /// ```
 /// use tsadaash::domain::periodicity::*;
-/// use chrono::{Weekday, Month, NaiveTime};
+/// use chrono::{Weekday, Month};
 /// 
 /// let periodicity = Periodicity {
 ///     rep_unit: RepetitionUnit::Day,
@@ -238,9 +238,6 @@ pub struct PeriodicityConstraints {
 ///         ..Default::default()
 ///     },
 ///     timeframe: None,
-///     week_start: Weekday::Mon,
-///     year_start: Month::January,
-///     day_start: NaiveTime::from_hms_opt(0, 0, 0).unwrap(),
 ///     special_pattern: None,
 ///     reference_date: None,
 /// };
@@ -270,25 +267,6 @@ pub struct Periodicity {
     /// Optional validity period for this periodicity
     /// (start_inclusive, end_exclusive)
     pub timeframe: Option<(DateTime<Utc>, DateTime<Utc>)>,
-    
-    // ── CALENDAR SETTINGS ────────────────────────────────────
-    
-    /// First day of the week (for week-based calculations)
-    /// Default: Monday
-    pub week_start: Weekday,
-    
-    /// First month of the year (for year-based calculations)
-    /// Default: January (for fiscal years, could be different)
-    pub year_start: Month,
-    
-    /// Time of day when a new day begins (for daily task boundaries)
-    /// Default: 00:00:00 (midnight)
-    /// 
-    /// # Use Case
-    /// If set to 05:00:00, then "February 7th" runs from Feb 7 05:00:00 to Feb 8 04:59:59.
-    /// Useful for users who consider their "day" to start at a different time
-    /// (e.g., night shift workers, or "today ends when I go to sleep at 5 AM").
-    pub day_start: NaiveTime,
     
     // ── SPECIAL PATTERNS ─────────────────────────────────────
     
@@ -349,7 +327,11 @@ impl Periodicity {
     
     /// Checks if a specific date matches this periodicity's constraints
     /// Does NOT account for timeframe - call is_within_timeframe separately
-    pub fn matches_constraints(&self, date: &DateTime<Utc>) -> bool {
+    /// 
+    /// # Parameters
+    /// - `date`: The date to check
+    /// - `week_start`: First day of the week (from User calendar settings)
+    pub fn matches_constraints(&self, date: &DateTime<Utc>, week_start: Weekday) -> bool {
         // Handle special patterns first
         if let Some(pattern) = &self.special_pattern {
             return match pattern {
@@ -366,7 +348,7 @@ impl Periodicity {
         }
         
         if let Some(week) = &self.constraints.week_constraint {
-            if !self.matches_week_constraint(date, week) {
+            if !self.matches_week_constraint(date, week, week_start) {
                 return false;
             }
         }
@@ -438,15 +420,15 @@ impl Periodicity {
         }
     }
     
-    fn matches_week_constraint(&self, date: &DateTime<Utc>, constraint: &WeekConstraint) -> bool {
+    fn matches_week_constraint(&self, date: &DateTime<Utc>, constraint: &WeekConstraint, week_start: Weekday) -> bool {
         match constraint {
             WeekConstraint::EveryWeek => true,
             WeekConstraint::EveryNWeeks(n) => {
                 let ref_date = self.get_effective_reference_date(date);
                 
                 // Get the start of the week for both dates (respecting week_start)
-                let ref_week_start = Self::get_week_start(&ref_date, self.week_start);
-                let date_week_start = Self::get_week_start(date, self.week_start);
+                let ref_week_start = Self::get_week_start(&ref_date, week_start);
+                let date_week_start = Self::get_week_start(date, week_start);
                 
                 // Calculate weeks difference
                 let days_diff = (date_week_start - ref_week_start).num_days().abs();
@@ -455,7 +437,7 @@ impl Periodicity {
                 (weeks_diff % (*n as i64)) == 0
             }
             WeekConstraint::SpecificWeeksOfMonthFromFirst(weeks) => {
-                let week_of_month = Self::week_of_month_from_first(date, self.week_start);
+                let week_of_month = Self::week_of_month_from_first(date, week_start);
                 // 255 means invalid (belongs to different month)
                 if week_of_month == 255 {
                     return false;
@@ -463,7 +445,7 @@ impl Periodicity {
                 weeks.contains(&week_of_month)
             }
             WeekConstraint::SpecificWeeksOfMonthFromLast(weeks) => {
-                let week_of_month = Self::week_of_month_from_last(date, self.week_start);
+                let week_of_month = Self::week_of_month_from_last(date, week_start);
                 // 255 means invalid (belongs to different month)
                 if week_of_month == 255 {
                     return false;

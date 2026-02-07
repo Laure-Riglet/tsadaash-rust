@@ -680,9 +680,6 @@ mod tests {
             rep_per_unit: Some(1),
             constraints: PeriodicityConstraints::default(),
             timeframe: None,
-            week_start: Weekday::Mon,
-            year_start: Month::January,
-            day_start: NaiveTime::from_hms_opt(0, 0, 0).unwrap(),
             special_pattern: Some(SpecialPattern::Unique(UniqueDate {
                 date: Utc::now(),
             })),
@@ -699,9 +696,6 @@ mod tests {
             rep_per_unit: None,
             constraints: PeriodicityConstraints::default(),
             timeframe: None,
-            week_start: Weekday::Mon,
-            year_start: Month::January,
-            day_start: NaiveTime::from_hms_opt(0, 0, 0).unwrap(),
             special_pattern: None,
             reference_date: None,
         };

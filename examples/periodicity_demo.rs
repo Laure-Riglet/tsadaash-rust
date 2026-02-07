@@ -30,9 +30,9 @@ fn main() {
     let jan_24 = Utc.with_ymd_and_hms(2026, 1, 24, 10, 0, 0).unwrap();
     let mar_13 = Utc.with_ymd_and_hms(2026, 3, 13, 10, 0, 0).unwrap();
     
-    println!("   Jan 13 matches: {}", user_example.matches_constraints(&jan_13));
-    println!("   Jan 24 matches: {}", user_example.matches_constraints(&jan_24));
-    println!("   Mar 13 matches: {} (wrong month)\n", user_example.matches_constraints(&mar_13));
+    println!("   Jan 13 matches: {}", user_example.matches_constraints(&jan_13, Weekday::Mon));
+    println!("   Jan 24 matches: {}", user_example.matches_constraints(&jan_24, Weekday::Mon));
+    println!("   Mar 13 matches: {} (wrong month)\n", user_example.matches_constraints(&mar_13, Weekday::Mon));
     
     // Example 3: Weekdays only
     println!("3. Weekdays Only (Monday-Friday):");
@@ -43,8 +43,8 @@ fn main() {
     let monday = Utc.with_ymd_and_hms(2026, 2, 2, 10, 0, 0).unwrap();
     let saturday = Utc.with_ymd_and_hms(2026, 2, 7, 10, 0, 0).unwrap();
     
-    println!("   Monday matches: {}", weekdays.matches_constraints(&monday));
-    println!("   Saturday matches: {}\n", weekdays.matches_constraints(&saturday));
+    println!("   Monday matches: {}", weekdays.matches_constraints(&monday, Weekday::Mon));
+    println!("   Saturday matches: {}\n", weekdays.matches_constraints(&saturday, Weekday::Mon));
     
     // Example 4: First Monday of each month
     println!("4. First Monday of Each Month:");
@@ -57,8 +57,8 @@ fn main() {
     let first_monday = Utc.with_ymd_and_hms(2026, 2, 2, 10, 0, 0).unwrap();
     let second_monday = Utc.with_ymd_and_hms(2026, 2, 9, 10, 0, 0).unwrap();
     
-    println!("   Feb 2 (1st Mon) matches: {}", first_mondays.matches_constraints(&first_monday));
-    println!("   Feb 9 (2nd Mon) matches: {}\n", first_mondays.matches_constraints(&second_monday));
+    println!("   Feb 2 (1st Mon) matches: {}", first_mondays.matches_constraints(&first_monday, Weekday::Mon));
+    println!("   Feb 9 (2nd Mon) matches: {}\n", first_mondays.matches_constraints(&second_monday, Weekday::Mon));
     
     // Example 5: Last day of each month
     println!("5. Last Day of Each Month:");
@@ -72,9 +72,9 @@ fn main() {
     let jan_30 = Utc.with_ymd_and_hms(2026, 1, 30, 10, 0, 0).unwrap();
     let feb_28 = Utc.with_ymd_and_hms(2026, 2, 28, 10, 0, 0).unwrap();
     
-    println!("   Jan 31 matches: {}", last_days.matches_constraints(&jan_31));
-    println!("   Jan 30 matches: {}", last_days.matches_constraints(&jan_30));
-    println!("   Feb 28 matches: {} (last day of Feb)\n", last_days.matches_constraints(&feb_28));
+    println!("   Jan 31 matches: {}", last_days.matches_constraints(&jan_31, Weekday::Mon));
+    println!("   Jan 30 matches: {}", last_days.matches_constraints(&jan_30, Weekday::Mon));
+    println!("   Feb 28 matches: {} (last day of Feb)\n", last_days.matches_constraints(&feb_28, Weekday::Mon));
     
     // Example 6: Complex combination - 3 times per day on Mondays in Q1
     println!("6. Complex: 3x/day on Mondays in Q1:");
