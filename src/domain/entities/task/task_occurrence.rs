@@ -1,5 +1,5 @@
 use chrono::{DateTime, Utc};
-use super::*;
+use super::OccurenceRep;
 
 // ========================================================================
 // VALIDATION ERRORS

@@ -29,5 +29,3 @@ pub use task_occurrence::{
 
 pub mod occurrence_rep;
 pub use occurrence_rep::OccurenceRep;
-
-pub use crate::domain::validators::periodicity_validator::{ValidationError, validate_periodicity};

@@ -1,5 +1,6 @@
 use chrono::{Month, NaiveTime, Weekday};
-use super::*;
+use super::timezone::Timezone;
+use super::location::Location;
 
 #[derive(Debug, Clone)]
 pub struct User {

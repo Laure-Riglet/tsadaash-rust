@@ -1,5 +1,5 @@
 use chrono::{DateTime, Utc, Weekday};
-use super::*;
+use crate::domain::entities::task::periodicity::Periodicity;
 
 // ========================================================================
 // VALIDATION ERRORS
