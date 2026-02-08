@@ -12,8 +12,8 @@ pub struct User {
     /// User's timezone (e.g., "America/New_York", "Europe/London")
     pub timezone: Timezone,
     
-    /// User's physical location (optional)
-    pub location: Option<Vec<Location>>,  // Changed to Vec<Location> to allow multiple locations (e.g., home, work)
+    /// User's physical locations
+    pub locations: Vec<Option<Location>>,  // Allow for multiple locations, some of which may be None (e.g., "home", "work", "gym", etc.)
 
     // ── CALENDAR SETTINGS ────────────────────────────────────
     
@@ -48,20 +48,20 @@ impl User {
             email,
             password_hash,
             timezone,
-            location: None,
+            locations: Vec::new(),  // Default to no locations
             week_start: Weekday::Mon,
             year_start: Month::January,
             day_start: NaiveTime::from_hms_opt(0, 0, 0).unwrap(),
         }
     }
     
-    /// Create a user with custom calendar settings and optional location
+    /// Create a user with custom calendar settings and optional locations
     pub fn with_all_settings(
         username: String,
         email: String,
         password_hash: String,
         timezone: Timezone,
-        location: Option<Vec<Location>>,
+        locations: Vec<Option<Location>>,
         week_start: Weekday,
         year_start: Month,
         day_start: NaiveTime,
@@ -71,7 +71,7 @@ impl User {
             email,
             password_hash,
             timezone,
-            location,
+            locations,
             week_start,
             year_start,
             day_start,
@@ -85,9 +85,9 @@ impl User {
         self.timezone = timezone;
     }
     
-    /// Sets or updates the user's location
-    pub fn set_location(&mut self, location: Option<Vec<Location>>) {
-        self.location = location;
+    /// Sets or updates the user's locations
+    pub fn set_locations(&mut self, locations: Vec<Option<Location>>) {
+        self.locations = locations;
     }
     
     // ── CALENDAR SETTINGS SETTERS ──────────────────────────
