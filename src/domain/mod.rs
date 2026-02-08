@@ -50,3 +50,34 @@ pub use entities::task::{
     OccurrenceTimingSettings,
     RepTimingSettings,
 };
+
+// Schedule module
+pub use entities::schedule::{
+    // Core types
+    AvailabilityKind,
+    AvailabilityLevel,
+    CapabilitySet,
+    DeviceAccess,
+    LocationConstraint,
+    Mobility,
+    UnavailableReason,
+    
+    // Template types
+    RecurringRule,
+    ScheduleTemplate,
+    
+    // Expansion
+    TimeBlock,
+    expand_template,
+    
+    // Matching
+    SchedulableTask,
+    can_schedule_task_in_block,
+    find_candidate_slots,
+    
+    // Constants
+    BUSY_FLEX_MAX_DEVICE,
+    BUSY_FLEX_MAX_EYES,
+    BUSY_FLEX_MAX_HANDS,
+    BUSY_FLEX_MAX_MINUTES,
+};
