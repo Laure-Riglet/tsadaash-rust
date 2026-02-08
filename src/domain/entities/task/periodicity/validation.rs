@@ -1,10 +1,10 @@
 use std::collections::HashSet;
 use chrono::{DateTime, Utc};
-use crate::domain::entities::task::{
+use super::{
     DayConstraint, MonthConstraint, MonthWeekPosition, Periodicity, PeriodicityConstraints,
     SpecialPattern, WeekConstraint, YearConstraint,
+    OccurrenceTimingSettings, RepTimingSettings, RepetitionUnit,
 };
-use crate::domain::entities::task::periodicity::{OccurrenceTimingSettings, RepTimingSettings, RepetitionUnit};
 
 // ========================================================================
 // VALIDATION ERRORS

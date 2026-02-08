@@ -1,16 +1,28 @@
 pub mod periodicity;
 pub use periodicity::{
+    // Main types
     Periodicity,
     PeriodicityConstraints,
+    RepetitionUnit,
+    SpecialPattern,
+    CustomDates,
+    UniqueDate,
+    
+    // Constraints
     DayConstraint,
     WeekConstraint,
     MonthConstraint,
     YearConstraint,
-    NthWeekdayOfMonth,
     MonthWeekPosition,
-    SpecialPattern,
-    CustomDates,
-    UniqueDate,
+    NthWeekdayOfMonth,
+    
+    // Timing settings
+    OccurrenceTimingSettings,
+    RepTimingSettings,
+    
+    // Builder and validation
+    PeriodicityBuilder,
+    ValidationError as PeriodicityValidationError,
 };
 
 pub mod task;

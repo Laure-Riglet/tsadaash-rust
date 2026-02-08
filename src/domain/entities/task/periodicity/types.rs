@@ -1,5 +1,5 @@
 use chrono::{DateTime, NaiveTime, Datelike, Month, NaiveDate, Utc, Weekday};
-use crate::domain::validators::periodicity_validator::{ValidationError, validate_periodicity};
+use super::validation::{ValidationError, validate_periodicity};
 
 // ========================================================================
 // CORE REPETITION SETTINGS

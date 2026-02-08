@@ -9,9 +9,8 @@
 
 #[cfg(test)]
 mod periodicity_tests {
-    use crate::domain::builders::periodicity_builder::PeriodicityBuilder;
-    use crate::domain::validators::periodicity_validator::ValidationError;
-    use crate::domain::entities::task::periodicity::{Periodicity, DayConstraint, MonthConstraint,
+    use crate::domain::{PeriodicityBuilder, PeriodicityValidationError};
+    use crate::domain::entities::task::{Periodicity, DayConstraint, MonthConstraint,
         NthWeekdayOfMonth, RepetitionUnit};
     use chrono::{Utc, Weekday, Month, TimeZone};
 
@@ -246,7 +245,7 @@ mod periodicity_tests {
         let result = p.validate();
         assert!(result.is_err());
         match result {
-            Err(ValidationError::MissingRequired { field, .. }) => {
+            Err(PeriodicityValidationError::MissingRequired { field, .. }) => {
                 assert_eq!(field, "rep_per_unit");
             }
             _ => panic!("Expected MissingRequired error"),

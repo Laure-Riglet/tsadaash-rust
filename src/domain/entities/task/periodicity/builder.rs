@@ -1,10 +1,10 @@
 use chrono::{DateTime, Utc, Weekday, Month, TimeZone};
-use crate::domain::validators::periodicity_validator;
-use crate::domain::entities::task::periodicity::{OccurrenceTimingSettings, NthWeekdayOfMonth, RepetitionUnit};
-use crate::domain::entities::task::{
+use super::{
     DayConstraint, MonthConstraint, MonthWeekPosition, Periodicity, PeriodicityConstraints,
     SpecialPattern, WeekConstraint, YearConstraint, CustomDates, UniqueDate,
+    RepetitionUnit, OccurrenceTimingSettings, NthWeekdayOfMonth,
 };
+use super::validation;
 
 // ========================================================================
 // PERIODICITY BUILDER
@@ -15,7 +15,7 @@ use crate::domain::entities::task::{
 /// 
 /// # Example
 /// ```
-/// use tsadaash::domain::builders::periodicity_builder::PeriodicityBuilder;
+/// use tsadaash::domain::PeriodicityBuilder;
 /// use chrono::{Weekday, Month};
 /// 
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -229,7 +229,7 @@ impl PeriodicityBuilder {
     }
     
     /// Custom dates without regular pattern
-    pub fn custom_dates(mut self, dates: Vec<DateTime<Utc>>) -> Result<Self, periodicity_validator::ValidationError> {
+    pub fn custom_dates(mut self, dates: Vec<DateTime<Utc>>) -> Result<Self, validation::ValidationError> {
         let custom = CustomDates::new(dates)?;
         self.rep_unit = Some(RepetitionUnit::None);
         self.special_pattern = Some(SpecialPattern::Custom(custom));
@@ -285,8 +285,8 @@ impl PeriodicityBuilder {
     /// 
     /// # Example
     /// ```
-    /// use tsadaash::domain::builders::periodicity_builder::PeriodicityBuilder;
-    /// use tsadaash::domain::entities::task::periodicity::OccurrenceTimingSettings;
+    /// use tsadaash::domain::PeriodicityBuilder;
+    /// use tsadaash::domain::OccurrenceTimingSettings;
     /// use chrono::NaiveTime;
     /// 
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -314,7 +314,7 @@ impl PeriodicityBuilder {
     // ────────────────────────────────────────────────────────
     
     /// Builds and validates the Periodicity instance
-    pub fn build(self) -> Result<Periodicity, periodicity_validator::ValidationError> {
+    pub fn build(self) -> Result<Periodicity, validation::ValidationError> {
         let periodicity = Periodicity {
             rep_unit: self.rep_unit.unwrap_or(RepetitionUnit::None),
             rep_per_unit: self.rep_per_unit,
@@ -344,7 +344,7 @@ impl PeriodicityBuilder {
 
 impl Periodicity {
     /// Creates a daily task (once per day, every day)
-    pub fn daily() -> Result<Self, periodicity_validator::ValidationError> {
+    pub fn daily() -> Result<Self, validation::ValidationError> {
         PeriodicityBuilder::new()
             .daily(1)
             .every_day()
@@ -352,7 +352,7 @@ impl Periodicity {
     }
     
     /// Creates a weekly task (once per week, every week)
-    pub fn weekly() -> Result<Self, periodicity_validator::ValidationError> {
+    pub fn weekly() -> Result<Self, validation::ValidationError> {
         PeriodicityBuilder::new()
             .weekly(1)
             .every_week()
@@ -360,7 +360,7 @@ impl Periodicity {
     }
     
     /// Creates a monthly task (once per month, every month)
-    pub fn monthly() -> Result<Self, periodicity_validator::ValidationError> {
+    pub fn monthly() -> Result<Self, validation::ValidationError> {
         PeriodicityBuilder::new()
             .monthly(1)
             .every_month()
@@ -368,7 +368,7 @@ impl Periodicity {
     }
     
     /// Creates a yearly task (once per year, every year)
-    pub fn yearly() -> Result<Self, periodicity_validator::ValidationError> {
+    pub fn yearly() -> Result<Self, validation::ValidationError> {
         PeriodicityBuilder::new()
             .yearly(1)
             .every_year()
@@ -376,14 +376,14 @@ impl Periodicity {
     }
     
     /// Creates a one-time task
-    pub fn unique(date: DateTime<Utc>) -> Result<Self, periodicity_validator::ValidationError> {
+    pub fn unique(date: DateTime<Utc>) -> Result<Self, validation::ValidationError> {
         PeriodicityBuilder::new()
             .unique(date)
             .build()
     }
     
     /// Creates a task on specific weekdays (e.g., Monday, Wednesday, Friday)
-    pub fn on_weekdays(weekdays: Vec<Weekday>) -> Result<Self, periodicity_validator::ValidationError> {
+    pub fn on_weekdays(weekdays: Vec<Weekday>) -> Result<Self, validation::ValidationError> {
         PeriodicityBuilder::new()
             .daily(1)
             .on_weekdays(weekdays)
@@ -391,7 +391,7 @@ impl Periodicity {
     }
     
     /// Creates a task on specific days of the month (1-indexed: 1 = 1st, 15 = 15th, etc.)
-    pub fn on_days_of_month(days: Vec<u8>) -> Result<Self, periodicity_validator::ValidationError> {
+    pub fn on_days_of_month(days: Vec<u8>) -> Result<Self, validation::ValidationError> {
         PeriodicityBuilder::new()
             .daily(1)
             .on_month_days(days)

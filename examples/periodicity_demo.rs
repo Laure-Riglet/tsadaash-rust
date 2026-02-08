@@ -1,10 +1,11 @@
 /// Example usage demonstrations for the Periodicity system
 /// This file shows how to use the new constraint-based periodicity model
 
-use tsadaash::domain::entities::task::periodicity::{
-    Periodicity, NthWeekdayOfMonth
+use tsadaash::domain::{
+    Periodicity,
+    PeriodicityBuilder,
+    NthWeekdayOfMonth,
 };
-use tsadaash::domain::builders::periodicity_builder::PeriodicityBuilder;
 use chrono::{Utc, Weekday, Month, TimeZone};
 
 fn main() {
