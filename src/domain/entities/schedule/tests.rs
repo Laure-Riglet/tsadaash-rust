@@ -140,8 +140,6 @@ mod integration_tests {
         .unwrap();
 
         let template = ScheduleTemplate::new(
-            1,
-            1,
             "Work Week".to_string(),
             "America/New_York".to_string(),
             vec![work_rule, lunch_rule],
@@ -206,8 +204,6 @@ mod integration_tests {
         .unwrap();
 
         let template = ScheduleTemplate::new(
-            1,
-            1,
             "Sleep Schedule".to_string(),
             "America/New_York".to_string(),
             vec![sleep_rule],
@@ -259,8 +255,6 @@ mod integration_tests {
         .unwrap();
 
         let template = ScheduleTemplate::new(
-            1,
-            1,
             "Commute".to_string(),
             "America/New_York".to_string(),
             vec![commute_rule],
@@ -335,8 +329,6 @@ mod integration_tests {
         .unwrap();
 
         let template = ScheduleTemplate::new(
-            1,
-            1,
             "Location Test".to_string(),
             "America/New_York".to_string(),
             vec![rule],
@@ -432,8 +424,6 @@ mod integration_tests {
         .unwrap();
 
         let template = ScheduleTemplate::new(
-            1,
-            1,
             "Complex Schedule".to_string(),
             "America/New_York".to_string(),
             vec![base, work, meeting, lunch],
@@ -509,8 +499,6 @@ mod integration_tests {
         .unwrap();
 
         let template = ScheduleTemplate::new(
-            1,
-            1,
             "Tie Break Test".to_string(),
             "America/New_York".to_string(),
             vec![rule1, rule2],

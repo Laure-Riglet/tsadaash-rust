@@ -338,8 +338,6 @@ mod tests {
     #[test]
     fn test_expand_empty_template() {
         let template = ScheduleTemplate::new(
-            1,
-            1,
             "Empty".to_string(),
             "America/New_York".to_string(),
             vec![],
@@ -366,8 +364,6 @@ mod tests {
         ).unwrap();
 
         let template = ScheduleTemplate::new(
-            1,
-            1,
             "Simple".to_string(),
             "America/New_York".to_string(),
             vec![rule],
@@ -400,8 +396,6 @@ mod tests {
         ).unwrap();
 
         let template = ScheduleTemplate::new(
-            1,
-            1,
             "Sleep".to_string(),
             "America/New_York".to_string(),
             vec![rule],
@@ -448,8 +442,6 @@ mod tests {
         ).unwrap();
 
         let template = ScheduleTemplate::new(
-            1,
-            1,
             "Conflict Test".to_string(),
             "America/New_York".to_string(),
             vec![base_rule, override_rule],

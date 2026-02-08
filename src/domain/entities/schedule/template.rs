@@ -80,10 +80,12 @@ impl RecurringRule {
 /// 
 /// Contains a set of recurring rules that define availability patterns
 /// throughout the week. Rules can overlap and are resolved by priority.
+/// 
+/// # Design Note
+/// This entity does not contain persistence IDs (id, user_id).
+/// Those are infrastructure concerns managed by repositories.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ScheduleTemplate {
-    pub id: i32,
-    pub user_id: i32,
     pub name: String,
     
     /// IANA timezone name (e.g., "America/New_York")
@@ -96,8 +98,6 @@ pub struct ScheduleTemplate {
 impl ScheduleTemplate {
     /// Create a new schedule template with validation
     pub fn new(
-        id: i32,
-        user_id: i32,
         name: String,
         timezone: String,
         rules: Vec<RecurringRule>,
@@ -111,8 +111,6 @@ impl ScheduleTemplate {
         }
 
         Ok(Self {
-            id,
-            user_id,
             name: name.trim().to_string(),
             timezone,
             rules,
@@ -185,8 +183,6 @@ mod tests {
     fn test_schedule_template_validation() {
         // Empty name should fail
         let result = ScheduleTemplate::new(
-            1,
-            1,
             "".to_string(),
             "America/New_York".to_string(),
             vec![],
@@ -195,8 +191,6 @@ mod tests {
 
         // Empty timezone should fail
         let result = ScheduleTemplate::new(
-            1,
-            1,
             "My Schedule".to_string(),
             "".to_string(),
             vec![],
@@ -205,8 +199,6 @@ mod tests {
 
         // Valid template should succeed
         let result = ScheduleTemplate::new(
-            1,
-            1,
             "My Schedule".to_string(),
             "America/New_York".to_string(),
             vec![],

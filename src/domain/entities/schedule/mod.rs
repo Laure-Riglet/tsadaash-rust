@@ -36,8 +36,6 @@
 //! 
 //! // Create a schedule template
 //! let template = ScheduleTemplate::new(
-//!     1,
-//!     1,
 //!     "My Schedule".to_string(),
 //!     "America/New_York".to_string(),
 //!     vec![work_rule],
