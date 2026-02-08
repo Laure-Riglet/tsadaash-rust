@@ -1,5 +1,6 @@
 use chrono::{DateTime, Utc};
 use crate::domain::entities::task::TaskOccurrenceValidationError;
+use crate::config;
 
 // ========================================================================
 // REPETITION OCCURRENCE - A single rep within a TaskOccurrence
@@ -26,7 +27,9 @@ pub struct OccurenceRep {
 }
 
 impl OccurenceRep {
-    pub const MAX_NOTES_LENGTH: usize = 500;
+    pub fn max_notes_length() -> usize {
+        config::occurrence_rep_max_notes_length()
+    }
 
     /// Creates a new incomplete repetition
     pub fn new(rep_index: u8) -> Self {
@@ -74,9 +77,9 @@ impl OccurenceRep {
 
     pub fn set_notes(&mut self, notes: Option<String>) -> Result<(), TaskOccurrenceValidationError> {
         if let Some(ref n) = notes {
-            if n.len() > Self::MAX_NOTES_LENGTH {
+            if n.len() > Self::max_notes_length() {
                 return Err(TaskOccurrenceValidationError::NotesTooLong {
-                    max: Self::MAX_NOTES_LENGTH,
+                    max: Self::max_notes_length(),
                     actual: n.len(),
                 });
             }

@@ -4,6 +4,7 @@ use crate::domain::entities::user::Location;
 use crate::domain::entities::schedule::{
     SchedulableTask, AvailabilityLevel, DeviceAccess, Mobility,
 };
+use crate::config;
 
 // ========================================================================
 // VALIDATION ERRORS
@@ -133,10 +134,14 @@ pub struct Task {
 
 impl Task {
     /// Maximum length for task title
-    pub const MAX_TITLE_LENGTH: usize = 200;
+    pub fn max_title_length() -> usize {
+        config::task_max_title_length()
+    }
     
     /// Maximum length for task description
-    pub const MAX_DESCRIPTION_LENGTH: usize = 2000;
+    pub fn max_description_length() -> usize {
+        config::task_max_description_length()
+    }
 
     /// Creates a new Task with validation
     pub fn new(
@@ -158,9 +163,9 @@ impl Task {
         if title.trim().is_empty() {
             return Err(TaskValidationError::EmptyTitle);
         }
-        if title.len() > Self::MAX_TITLE_LENGTH {
+        if title.len() > Self::max_title_length() {
             return Err(TaskValidationError::TitleTooLong {
-                max: Self::MAX_TITLE_LENGTH,
+                max: Self::max_title_length(),
                 actual: title.len(),
             });
         }
@@ -254,9 +259,9 @@ impl Task {
         if title.trim().is_empty() {
             return Err(TaskValidationError::EmptyTitle);
         }
-        if title.len() > Self::MAX_TITLE_LENGTH {
+        if title.len() > Self::max_title_length() {
             return Err(TaskValidationError::TitleTooLong {
-                max: Self::MAX_TITLE_LENGTH,
+                max: Self::max_title_length(),
                 actual: title.len(),
             });
         }
@@ -267,9 +272,9 @@ impl Task {
 
     pub fn set_description(&mut self, description: Option<String>) -> Result<(), TaskValidationError> {
         if let Some(ref desc) = description {
-            if desc.len() > Self::MAX_DESCRIPTION_LENGTH {
+            if desc.len() > Self::max_description_length() {
                 return Err(TaskValidationError::DescriptionTooLong {
-                    max: Self::MAX_DESCRIPTION_LENGTH,
+                    max: Self::max_description_length(),
                     actual: desc.len(),
                 });
             }
@@ -393,7 +398,7 @@ impl SchedulableTask for Task {
             .occurrence_settings
             .as_ref()
             .and_then(|settings| settings.duration)
-            .unwrap_or(30) as u32 // Default to 30 minutes if not specified
+            .unwrap_or(config::task_default_duration_minutes()) as u32
     }
 
     fn requires_location(&self) -> bool {
@@ -453,7 +458,7 @@ mod tests {
     #[test]
     fn test_task_creation_title_too_long() {
         let periodicity = Periodicity::daily().unwrap();
-        let long_title = "a".repeat(Task::MAX_TITLE_LENGTH + 1);
+        let long_title = "a".repeat(Task::max_title_length() + 1);
         let task = Task::new(long_title, periodicity);
         assert!(matches!(task, Err(TaskValidationError::TitleTooLong { .. })));
     }

@@ -1,5 +1,6 @@
 use chrono::{DateTime, Utc};
 use super::OccurenceRep;
+use crate::config;
 
 // ========================================================================
 // VALIDATION ERRORS
@@ -97,7 +98,9 @@ pub struct TaskOccurrence {
 
 impl TaskOccurrence {
     /// Maximum length for occurrence-level notes
-    pub const MAX_NOTES_LENGTH: usize = 1000;
+    pub fn max_notes_length() -> usize {
+        config::occurrence_max_notes_length()
+    }
 
     /// Creates a new TaskOccurrence for a time window with specified number of repetitions
     /// 
@@ -237,9 +240,9 @@ impl TaskOccurrence {
     /// Set notes for the entire occurrence
     pub fn set_notes(&mut self, notes: Option<String>) -> Result<(), TaskOccurrenceValidationError> {
         if let Some(ref n) = notes {
-            if n.len() > Self::MAX_NOTES_LENGTH {
+            if n.len() > Self::max_notes_length() {
                 return Err(TaskOccurrenceValidationError::NotesTooLong {
-                    max: Self::MAX_NOTES_LENGTH,
+                    max: Self::max_notes_length(),
                     actual: n.len(),
                 });
             }
@@ -455,12 +458,12 @@ mod tests {
         let mut occurrence = TaskOccurrence::new(start, end, 1).unwrap();
         
         // Occurrence notes too long
-        let long_notes = "a".repeat(TaskOccurrence::MAX_NOTES_LENGTH + 1);
+        let long_notes = "a".repeat(TaskOccurrence::max_notes_length() + 1);
         let result = occurrence.set_notes(Some(long_notes));
         assert!(matches!(result, Err(TaskOccurrenceValidationError::NotesTooLong { .. })));
         
         // Rep notes too long
-        let long_rep_notes = "b".repeat(OccurenceRep::MAX_NOTES_LENGTH + 1);
+        let long_rep_notes = "b".repeat(OccurenceRep::max_notes_length() + 1);
         let result = occurrence.set_rep_notes(0, Some(long_rep_notes));
         assert!(matches!(result, Err(TaskOccurrenceValidationError::NotesTooLong { .. })));
     }

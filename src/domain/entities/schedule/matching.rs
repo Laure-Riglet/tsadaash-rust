@@ -3,7 +3,7 @@ use crate::domain::entities::user::Location;
 use super::expansion::TimeBlock;
 use super::types::{
     AvailabilityKind, AvailabilityLevel, DeviceAccess, Mobility,
-    BUSY_FLEX_MAX_MINUTES, BUSY_FLEX_MAX_HANDS, BUSY_FLEX_MAX_EYES,
+    busy_flex_max_minutes, busy_flex_max_hands, busy_flex_max_eyes,
 };
 
 // ========================================================================
@@ -54,7 +54,7 @@ pub trait SchedulableTask {
 ///    - Available → check normal requirements
 /// 
 /// 2. **BusyButFlexible Constraints (micro tasks only)**
-///    - Duration <= BUSY_FLEX_MAX_MINUTES (default 15)
+///    - Duration <= busy_flex_max_minutes() (default 15)
 ///    - requires_location() == false
 ///    - Location constraint allows unknown/any
 ///    - Device requirement != Computer
@@ -115,7 +115,7 @@ pub fn can_schedule_task_in_block(
 
 /// Check if a task qualifies as a "micro task" for BusyButFlexible periods
 fn is_micro_task(task: &impl SchedulableTask) -> bool {
-    task.estimated_duration_minutes() <= BUSY_FLEX_MAX_MINUTES
+    task.estimated_duration_minutes() <= busy_flex_max_minutes()
         && !task.requires_location()
 }
 
@@ -142,12 +142,12 @@ fn check_busy_flex_constraints(
     }
 
     // Hands must be <= Limited
-    if task.min_hands() > BUSY_FLEX_MAX_HANDS {
+    if task.min_hands() > busy_flex_max_hands() {
         return false;
     }
 
     // Eyes must be <= Limited
-    if task.min_eyes() > BUSY_FLEX_MAX_EYES {
+    if task.min_eyes() > busy_flex_max_eyes() {
         return false;
     }
 

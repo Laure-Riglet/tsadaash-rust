@@ -75,9 +75,9 @@ pub use entities::schedule::{
     can_schedule_task_in_block,
     find_candidate_slots,
     
-    // Constants
-    BUSY_FLEX_MAX_DEVICE,
-    BUSY_FLEX_MAX_EYES,
-    BUSY_FLEX_MAX_HANDS,
-    BUSY_FLEX_MAX_MINUTES,
+    // Config functions
+    busy_flex_max_device,
+    busy_flex_max_eyes,
+    busy_flex_max_hands,
+    busy_flex_max_minutes,
 };

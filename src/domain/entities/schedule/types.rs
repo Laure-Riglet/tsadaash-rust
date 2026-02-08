@@ -1,4 +1,5 @@
 use crate::domain::entities::user::Location;
+use crate::config;
 
 // ========================================================================
 // AVAILABILITY TYPES
@@ -142,16 +143,36 @@ impl LocationConstraint {
 // ========================================================================
 
 /// Maximum task duration (in minutes) allowed during BusyButFlexible periods
-pub const BUSY_FLEX_MAX_MINUTES: u32 = 15;
+pub fn busy_flex_max_minutes() -> u32 {
+    config::schedule_busy_flex_max_minutes()
+}
 
 /// Maximum hands level allowed during BusyButFlexible periods
-pub const BUSY_FLEX_MAX_HANDS: AvailabilityLevel = AvailabilityLevel::Limited;
+pub fn busy_flex_max_hands() -> AvailabilityLevel {
+    match config::schedule_busy_flex_max_hands_level() {
+        0 => AvailabilityLevel::None,
+        1 => AvailabilityLevel::Limited,
+        _ => AvailabilityLevel::Full,
+    }
+}
 
 /// Maximum eyes level allowed during BusyButFlexible periods
-pub const BUSY_FLEX_MAX_EYES: AvailabilityLevel = AvailabilityLevel::Limited;
+pub fn busy_flex_max_eyes() -> AvailabilityLevel {
+    match config::schedule_busy_flex_max_eyes_level() {
+        0 => AvailabilityLevel::None,
+        1 => AvailabilityLevel::Limited,
+        _ => AvailabilityLevel::Full,
+    }
+}
 
 /// Maximum device required for BusyButFlexible periods
-pub const BUSY_FLEX_MAX_DEVICE: DeviceAccess = DeviceAccess::PhoneOnly;
+pub fn busy_flex_max_device() -> DeviceAccess {
+    match config::schedule_busy_flex_max_device_level() {
+        0 => DeviceAccess::None,
+        1 => DeviceAccess::PhoneOnly,
+        _ => DeviceAccess::Computer,
+    }
+}
 
 #[cfg(test)]
 mod tests {
