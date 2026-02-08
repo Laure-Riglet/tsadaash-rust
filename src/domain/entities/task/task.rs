@@ -1,5 +1,9 @@
 use chrono::{DateTime, Utc, Weekday};
 use crate::domain::entities::task::periodicity::Periodicity;
+use crate::domain::entities::user::Location;
+use crate::domain::entities::schedule::{
+    SchedulableTask, AvailabilityLevel, DeviceAccess, Mobility,
+};
 
 // ========================================================================
 // VALIDATION ERRORS
@@ -86,7 +90,7 @@ impl Default for TaskPriority {
 /// - TaskOccurrence entities are managed separately (see task_occurrence.rs)
 /// - No `id` field - persistence concerns belong in infrastructure layer
 /// - No direct reference to user - multi-tenancy handled in infrastructure
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Task {
     // ── CORE ATTRIBUTES ─────────────────────────────────────
     title: String,
@@ -96,6 +100,31 @@ pub struct Task {
     
     // ── SCHEDULING ──────────────────────────────────────────
     periodicity: Periodicity,
+    
+    // ── LOCATION REQUIREMENTS ───────────────────────────────
+    /// Locations where this task can be performed
+    /// Empty = task can be done anywhere (location-free)
+    /// Non-empty = task requires being at one of these locations
+    locations: Vec<Option<Location>>,
+    
+    // ── CAPABILITY REQUIREMENTS ─────────────────────────────
+    /// Minimum hands availability required
+    min_hands: AvailabilityLevel,
+    
+    /// Minimum eyes availability required
+    min_eyes: AvailabilityLevel,
+    
+    /// Minimum speech availability required
+    min_speech: AvailabilityLevel,
+    
+    /// Minimum cognitive availability required
+    min_cognitive: AvailabilityLevel,
+    
+    /// Minimum device access required
+    min_device: DeviceAccess,
+    
+    /// Allowed mobility states (empty = all allowed)
+    allowed_mobility: Vec<Mobility>,
     
     // ── METADATA ────────────────────────────────────────────
     created_at: DateTime<Utc>,
@@ -149,6 +178,13 @@ impl Task {
             status: TaskStatus::default(),
             priority: TaskPriority::default(),
             periodicity,
+            locations: Vec::new(), // Default: location-free
+            min_hands: AvailabilityLevel::None, // Default: no hands required
+            min_eyes: AvailabilityLevel::None,
+            min_speech: AvailabilityLevel::None,
+            min_cognitive: AvailabilityLevel::None,
+            min_device: DeviceAccess::None, // Default: no device required
+            allowed_mobility: Vec::new(), // Default: all mobility states allowed
             created_at,
             updated_at,
         })
@@ -182,6 +218,34 @@ impl Task {
 
     pub fn updated_at(&self) -> DateTime<Utc> {
         self.updated_at
+    }
+
+    pub fn locations(&self) -> &[Option<Location>] {
+        &self.locations
+    }
+
+    pub fn min_hands(&self) -> AvailabilityLevel {
+        self.min_hands
+    }
+
+    pub fn min_eyes(&self) -> AvailabilityLevel {
+        self.min_eyes
+    }
+
+    pub fn min_speech(&self) -> AvailabilityLevel {
+        self.min_speech
+    }
+
+    pub fn min_cognitive(&self) -> AvailabilityLevel {
+        self.min_cognitive
+    }
+
+    pub fn min_device(&self) -> DeviceAccess {
+        self.min_device
+    }
+
+    pub fn allowed_mobility(&self) -> &[Mobility] {
+        &self.allowed_mobility
     }
 
     // ── SETTERS (with validation) ──────────────────────────
@@ -227,6 +291,41 @@ impl Task {
 
     pub fn set_periodicity(&mut self, periodicity: Periodicity) {
         self.periodicity = periodicity;
+        self.touch();
+    }
+
+    pub fn set_locations(&mut self, locations: Vec<Option<Location>>) {
+        self.locations = locations;
+        self.touch();
+    }
+
+    pub fn set_min_hands(&mut self, min_hands: AvailabilityLevel) {
+        self.min_hands = min_hands;
+        self.touch();
+    }
+
+    pub fn set_min_eyes(&mut self, min_eyes: AvailabilityLevel) {
+        self.min_eyes = min_eyes;
+        self.touch();
+    }
+
+    pub fn set_min_speech(&mut self, min_speech: AvailabilityLevel) {
+        self.min_speech = min_speech;
+        self.touch();
+    }
+
+    pub fn set_min_cognitive(&mut self, min_cognitive: AvailabilityLevel) {
+        self.min_cognitive = min_cognitive;
+        self.touch();
+    }
+
+    pub fn set_min_device(&mut self, min_device: DeviceAccess) {
+        self.min_device = min_device;
+        self.touch();
+    }
+
+    pub fn set_allowed_mobility(&mut self, allowed_mobility: Vec<Mobility>) {
+        self.allowed_mobility = allowed_mobility;
         self.touch();
     }
 
@@ -280,6 +379,49 @@ impl Task {
     /// Update the updated_at timestamp
     fn touch(&mut self) {
         self.updated_at = Utc::now();
+    }
+}
+
+// ========================================================================
+// SCHEDULABLE TASK IMPLEMENTATION
+// ========================================================================
+
+impl SchedulableTask for Task {
+    fn estimated_duration_minutes(&self) -> u32 {
+        // Get duration from periodicity's occurrence timing settings
+        self.periodicity
+            .occurrence_settings
+            .as_ref()
+            .and_then(|settings| settings.duration)
+            .unwrap_or(30) as u32 // Default to 30 minutes if not specified
+    }
+
+    fn requires_location(&self) -> bool {
+        !self.locations.is_empty()
+    }
+
+    fn min_hands(&self) -> AvailabilityLevel {
+        self.min_hands
+    }
+
+    fn min_eyes(&self) -> AvailabilityLevel {
+        self.min_eyes
+    }
+
+    fn min_speech(&self) -> AvailabilityLevel {
+        self.min_speech
+    }
+
+    fn min_cognitive(&self) -> AvailabilityLevel {
+        self.min_cognitive
+    }
+
+    fn min_device(&self) -> DeviceAccess {
+        self.min_device
+    }
+
+    fn allowed_mobility(&self) -> Vec<Mobility> {
+        self.allowed_mobility.clone()
     }
 }
 
